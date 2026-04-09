@@ -1,21 +1,32 @@
 // src/components/Home.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserList } from '../components/Users/User';
 import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt } from 'react-icons/fa';
 import '../css/home/home-admin.css';
 
 const Home = () => {
-  const [userData, setUserData] = useState({
-    nombre: 'Administrador',
-    email: 'admin@forrastyle.com',
-    rol: 1
-  });
+  const navigate = useNavigate();
+  const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/');
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    console.log('User data from localStorage:', user);
+    setUserData(user);
+  }, [navigate]);
+
   const handleLogout = () => {
-    // Sin redirección al login
-    console.log('Sesión cerrada');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
   };
 
   const toggleSidebar = () => {
@@ -44,10 +55,10 @@ const Home = () => {
             <h1>
               Forra <span className="crazy-cursive">Style</span>
             </h1>
-            <h2 className="user-name">{userData?.nombre || 'Administrador'}</h2>
-            <p className="user-email">{userData?.email || 'admin@forrastyle.com'}</p>
+            <h2 className="user-name">{userData?.nombre || userData?.name || 'Administrador'}</h2>
+            <p className="user-email">{userData?.correo || userData?.email || ''}</p>
             <span className="user-role">
-              Administrador
+              {userData?.rol === 1 ? 'Administrador' : 'Usuario'}
             </span>
           </div>
         </div>
