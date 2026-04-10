@@ -20,14 +20,27 @@ export const UserController = {
     }
   },
 
+  async login(email, password) {
+    try {
+      const user = await UserModel.login(email, password)
+      return { success: true, data: user }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
   async createUser(userData) {
     // Validaciones
-    if (!userData.name || !userData.email) {
-      return { success: false, error: 'Nombre y email son requeridos' }
+    if (!userData.name || !userData.email || !userData.password) {
+      return { success: false, error: 'Nombre, email y contraseña son requeridos' }
     }
     
     if (!userData.email.includes('@')) {
       return { success: false, error: 'Email inválido' }
+    }
+
+    if (userData.password.length < 6) {
+      return { success: false, error: 'La contraseña debe tener al menos 6 caracteres' }
     }
 
     if (userData.phone && userData.phone.length < 10) {
