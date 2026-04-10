@@ -13,6 +13,7 @@ export function UserList() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('todos'); // 'todos', 'admin', 'usuario'
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
   
@@ -87,13 +88,23 @@ export function UserList() {
     loadUsers();
   };
 
-  // Filtrar usuarios
+  // Filtrar usuarios por nombre/email y por rol
   const filteredUsers = users.filter(user => {
+    // Filtro por búsqueda
     const searchLower = searchTerm.toLowerCase();
-    return (
+    const matchesSearch = 
       user.name.toLowerCase().includes(searchLower) ||
-      user.email.toLowerCase().includes(searchLower)
-    );
+      user.email.toLowerCase().includes(searchLower);
+    
+    // Filtro por rol
+    let matchesRole = true;
+    if (roleFilter === 'admin') {
+      matchesRole = user.rol === 1;
+    } else if (roleFilter === 'usuario') {
+      matchesRole = user.rol === 2;
+    }
+    
+    return matchesSearch && matchesRole;
   });
 
   // Paginación
@@ -115,12 +126,17 @@ export function UserList() {
     setCurrentPage(1);
   };
 
+  const handleRoleFilter = (role) => {
+    setRoleFilter(role);
+    setCurrentPage(1);
+  };
+
   if (loading) return <div className="userlist-loading">Cargando usuarios...</div>;
   if (error) return <div className="userlist-error">Error: {error}</div>;
 
   return (
     <div className="userlist-container">
-      {/* Fila con buscador y botón crear */}
+      {/* Fila con buscadores */}
       <div className="userlist-search-bar">
         <div className="search-wrapper">
           <input
@@ -131,6 +147,19 @@ export function UserList() {
             className="search-input"
           />
         </div>
+        
+        <div className="role-filter-wrapper">
+          <select 
+            value={roleFilter} 
+            onChange={(e) => handleRoleFilter(e.target.value)}
+            className="role-filter-select"
+          >
+            <option value="todos">Todos los roles</option>
+            <option value="admin">Administradores</option>
+            <option value="usuario">Usuarios normales</option>
+          </select>
+        </div>
+        
         <button 
           onClick={() => setIsCreateModalOpen(true)} 
           className="userlist-create-btn"
