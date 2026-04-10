@@ -1,0 +1,240 @@
+/* src/css/user/edit-user.css */
+
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: editFadeIn 0.3s ease-out;
+}
+
+.edit-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  animation: editSlideUp 0.3s ease-out;
+}
+
+.edit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.edit-modal-header h2 {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.edit-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.edit-modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+form {
+  padding: 1.5rem;
+}
+
+.edit-form-group {
+  margin-bottom: 1.25rem;
+}
+
+.edit-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+/* Estilos para inputs - texto visible */
+.edit-form-group input,
+.edit-form-group select {
+  width: 100%;
+  padding: 0.625rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  font-family: inherit;
+  background-color: white;
+  color: #1f2937;
+}
+
+/* Placeholder color */
+.edit-form-group input::placeholder {
+  color: #9ca3af;
+}
+
+/* Estilo para cuando el input está enfocado */
+.edit-form-group input:focus,
+.edit-form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: white;
+  color: #1f2937;
+}
+
+/* Estilo para cuando el input está deshabilitado */
+.edit-form-group input:disabled,
+.edit-form-group select:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.edit-form-group input[type="number"]::-webkit-inner-spin-button,
+.edit-form-group input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Estilo para select */
+.edit-rol-select {
+  cursor: pointer;
+  background-color: white;
+  color: #1f2937;
+}
+
+.edit-rol-select option {
+  color: #1f2937;
+  background-color: white;
+}
+
+.edit-form-hint {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.edit-error-message {
+  margin: 0 1.5rem;
+  padding: 0.75rem;
+  background-color: #fee2e2;
+  border-left: 3px solid #ef4444;
+  color: #dc2626;
+  font-size: 0.875rem;
+  border-radius: 0.375rem;
+}
+
+.edit-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.edit-btn-cancel,
+.edit-btn-submit {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.edit-btn-cancel {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.edit-btn-cancel:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.edit-btn-submit {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.edit-btn-submit:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.edit-btn-cancel:disabled,
+.edit-btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Animaciones */
+@keyframes editFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes editSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .edit-modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .edit-modal-header {
+    padding: 1rem;
+  }
+  
+  form {
+    padding: 1rem;
+  }
+  
+  .edit-modal-footer {
+    flex-direction: column;
+  }
+  
+  .edit-btn-cancel,
+  .edit-btn-submit {
+    width: 100%;
+  }
+}

@@ -1,14 +1,16 @@
-// src/components/users/UserList.jsx
 import React, { useState, useEffect } from 'react';
 import { UserController } from '../../controllers/UserController';
 import { CreateUserModal } from './Create-User';
+import { EditUserModal } from './Edit-User';
 import '../../css/user/user.css';
 
 export function UserList() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
@@ -32,7 +34,7 @@ export function UserList() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Eliminar usuario?')) {
+    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
       const result = await UserController.deleteUser(id);
       if (result.success) {
         loadUsers();
@@ -42,7 +44,16 @@ export function UserList() {
     }
   };
 
+  const handleEdit = (user) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
   const handleUserCreated = () => {
+    loadUsers();
+  };
+
+  const handleUserUpdated = () => {
     loadUsers();
   };
 
@@ -91,7 +102,7 @@ export function UserList() {
           />
         </div>
         <button 
-          onClick={() => setIsModalOpen(true)} 
+          onClick={() => setIsCreateModalOpen(true)} 
           className="userlist-create-btn"
         >
           Crear Usuario
@@ -107,6 +118,7 @@ export function UserList() {
               <th>Email</th>
               <th>Teléfono</th>
               <th>Edad</th>
+              <th>Rol</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -126,10 +138,23 @@ export function UserList() {
                 <td data-label="Edad">
                   {user.age ? `${user.age} años` : '—'}
                 </td>
-                <td data-label="Acciones">
+                <td data-label="Rol">
+                  <span className={`user-role-badge ${user.rol === 1 ? 'role-admin' : 'role-user'}`}>
+                    {user.rol === 1 ? 'Administrador' : 'Usuario'}
+                  </span>
+                </td>
+                <td data-label="Acciones" className="actions-cell">
+                  <button 
+                    onClick={() => handleEdit(user)} 
+                    className="userlist-edit-btn"
+                    title="Editar usuario"
+                  >
+                    Editar
+                  </button>
                   <button 
                     onClick={() => handleDelete(user.id)} 
                     className="userlist-delete-btn"
+                    title="Eliminar usuario"
                   >
                     Eliminar
                   </button>
@@ -146,10 +171,11 @@ export function UserList() {
         </div>
       )}
 
-      {filteredUsers.length > 0 && (
+      {/* Paginación - Solo se muestra si hay más de 10 usuarios */}
+      {filteredUsers.length > usersPerPage && (
         <div className="userlist-pagination">
           <div className="pagination-info">
-            Mostrando {indexOfFirstUser + 1} de {filteredUsers.length} usuarios
+            Mostrando {indexOfFirstUser + 1} - {Math.min(indexOfLastUser, filteredUsers.length)} de {filteredUsers.length} usuarios
           </div>
           <div className="pagination-controls">
             <button 
@@ -172,11 +198,44 @@ export function UserList() {
           </div>
         </div>
       )}
+      
+      {/* Paginación compacta para móviles cuando hay más de 10 usuarios */}
+      {filteredUsers.length > usersPerPage && (
+        <div className="userlist-pagination-mobile">
+          <button 
+            onClick={prevPage} 
+            disabled={currentPage === 1}
+            className="pagination-btn-mobile"
+          >
+            ◀ Anterior
+          </button>
+          <span className="pagination-current-mobile">
+            Pág. {currentPage} / {totalPages}
+          </span>
+          <button 
+            onClick={nextPage} 
+            disabled={currentPage === totalPages}
+            className="pagination-btn-mobile"
+          >
+            Siguiente ▶
+          </button>
+        </div>
+      )}
 
       <CreateUserModal 
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
         onUserCreated={handleUserCreated}
+      />
+
+      <EditUserModal 
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedUser(null);
+        }}
+        onUserUpdated={handleUserUpdated}
+        user={selectedUser}
       />
     </div>
   );
