@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserController } from '../../controllers/UserController';
 import { CreateUserModal } from './Create-User';
 import { EditUserModal } from './Edit-User';
+import { FaSpinner, FaCheckCircle } from 'react-icons/fa';
 import '../../css/user/user.css';
 
 export function UserList() {
@@ -14,6 +15,13 @@ export function UserList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
+  
+  // Estados para modales personalizados
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     loadUsers();
@@ -33,15 +41,37 @@ export function UserList() {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
-      const result = await UserController.deleteUser(id);
-      if (result.success) {
-        loadUsers();
-      } else {
-        window.alert('Error al eliminar: ' + result.error);
-      }
+  const handleDeleteClick = (user) => {
+    setUserToDelete(user);
+    setShowConfirmModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    
+    const result = await UserController.deleteUser(userToDelete.id);
+    
+    if (result.success) {
+      setSuccessMessage('Usuario eliminado exitosamente');
+      setShowConfirmModal(false);
+      setShowSuccessModal(true);
+      loadUsers();
+      
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 2000);
+    } else {
+      setSuccessMessage('Error al eliminar: ' + result.error);
+      setShowConfirmModal(false);
+      setShowSuccessModal(true);
+      
+      setTimeout(() => {
+        setShowSuccessModal(false);
+      }, 2000);
     }
+    
+    setDeleteLoading(false);
+    setUserToDelete(null);
   };
 
   const handleEdit = (user) => {
@@ -152,7 +182,7 @@ export function UserList() {
                     Editar
                   </button>
                   <button 
-                    onClick={() => handleDelete(user.id)} 
+                    onClick={() => handleDeleteClick(user)} 
                     className="userlist-delete-btn"
                     title="Eliminar usuario"
                   >
@@ -237,6 +267,58 @@ export function UserList() {
         onUserUpdated={handleUserUpdated}
         user={selectedUser}
       />
+
+      {/* Modal de Confirmación */}
+      {showConfirmModal && (
+        <div className="userlist-modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="userlist-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="userlist-modal-header">
+              <h3>Confirmar Eliminación</h3>
+            </div>
+            <div className="userlist-modal-body">
+              <p>¿Estás seguro de que deseas eliminar este usuario?</p>
+              <p className="userlist-modal-item">
+                <strong>{userToDelete?.name}</strong>
+              </p>
+              <p className="userlist-modal-warning">Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="userlist-modal-footer">
+              <button 
+                className="userlist-modal-cancel"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="userlist-modal-confirm"
+                onClick={handleDeleteConfirm}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <FaSpinner className="userlist-spinner" /> Eliminando...
+                  </>
+                ) : (
+                  'Eliminar'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Éxito */}
+      {showSuccessModal && (
+        <div className="userlist-success-overlay">
+          <div className="userlist-success-container">
+            <div className="userlist-success-icon">
+              <FaCheckCircle />
+            </div>
+            <h3>¡Éxito!</h3>
+            <p>{successMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
