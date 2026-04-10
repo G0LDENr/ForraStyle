@@ -13,7 +13,6 @@ const HomeAdmin = () => {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    // Verificar autenticación y rol
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
     const userRole = localStorage.getItem('userRole');
@@ -28,7 +27,6 @@ const HomeAdmin = () => {
       return;
     }
 
-    // Verificar que sea administrador (rol = 1)
     if (userRole !== '1') {
       console.log('No es administrador, redirigiendo a home');
       navigate('/home');
@@ -58,7 +56,6 @@ const HomeAdmin = () => {
   };
 
   const loadUsers = () => {
-    // Cargar usuarios del localStorage o API
     const savedUsers = localStorage.getItem('users');
     if (savedUsers) {
       setUsers(JSON.parse(savedUsers));
@@ -106,26 +103,26 @@ const HomeAdmin = () => {
         return (
           <div className="admin-orders-container">
             <h2 className="admin-section-title">Gestión de Pedidos</h2>
-            <div className="orders-stats">
-              <div className="stat-card">
+            <div className="admin-orders-stats">
+              <div className="admin-stat-card">
                 <h3>Total Pedidos</h3>
                 <p>{orders.length}</p>
               </div>
-              <div className="stat-card">
+              <div className="admin-stat-card">
                 <h3>Pendientes</h3>
                 <p>{orders.filter(o => o.estado === 'pendiente').length}</p>
               </div>
-              <div className="stat-card">
+              <div className="admin-stat-card">
                 <h3>Completados</h3>
                 <p>{orders.filter(o => o.estado === 'completado').length}</p>
               </div>
-              <div className="stat-card">
+              <div className="admin-stat-card">
                 <h3>Ingresos Totales</h3>
                 <p>${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</p>
               </div>
             </div>
             
-            <div className="orders-table-container">
+            <div className="admin-orders-table-container">
               <table className="admin-table">
                 <thead>
                   <tr>
@@ -141,7 +138,7 @@ const HomeAdmin = () => {
                 <tbody>
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="empty-row">No hay pedidos registrados</td>
+                      <td colSpan="7" className="admin-empty-row">No hay pedidos registrados</td>
                     </tr>
                   ) : (
                     orders.map(order => (
@@ -153,7 +150,7 @@ const HomeAdmin = () => {
                         <td>${(order.total || order.cantidad * order.precio).toFixed(2)}</td>
                         <td>
                           <span 
-                            className="status-badge"
+                            className="admin-status-badge"
                             style={{ backgroundColor: getStatusColor(order.estado) }}
                           >
                             {getStatusText(order.estado)}
@@ -173,26 +170,26 @@ const HomeAdmin = () => {
         return (
           <div className="admin-settings-container">
             <h2 className="admin-section-title">Configuración del Sistema</h2>
-            <div className="settings-card">
-              <div className="setting-item">
+            <div className="admin-settings-card">
+              <div className="admin-setting-item">
                 <label>Rol del usuario actual:</label>
-                <span className="badge-admin">Administrador</span>
+                <span className="admin-badge-admin">Administrador</span>
               </div>
-              <div className="setting-item">
+              <div className="admin-setting-item">
                 <label>Versión del sistema:</label>
                 <span>1.0.0</span>
               </div>
-              <div className="setting-item">
+              <div className="admin-setting-item">
                 <label>Total de usuarios:</label>
                 <span>{users.length}</span>
               </div>
-              <div className="setting-item">
+              <div className="admin-setting-item">
                 <label>Total de pedidos:</label>
                 <span>{orders.length}</span>
               </div>
-              <div className="setting-item">
+              <div className="admin-setting-item">
                 <button 
-                  className="btn-clear-data"
+                  className="admin-btn-clear-data"
                   onClick={() => {
                     if (window.confirm('¿Estás seguro de limpiar todos los datos?')) {
                       localStorage.removeItem('orders');
@@ -214,80 +211,80 @@ const HomeAdmin = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="admin-dashboard-container">
       <button 
-        className={`sidebar-toggle ${sidebarOpen ? 'open' : ''}`}
+        className={`admin-sidebar-toggle ${sidebarOpen ? 'open' : ''}`}
         onClick={toggleSidebar}
       >
         {sidebarOpen ? <FaTimes /> : <FaBars />}
       </button>
 
-      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <div className="user-info">
-            <div className="user-avatar">
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="admin-sidebar-header">
+          <div className="admin-user-info">
+            <div className="admin-user-avatar">
               <FaUserCircle size={60} />
             </div>
             <h1>
-              Forra <span className="crazy-cursive">Style</span>
+              Forra <span className="admin-crazy-cursive">Style</span>
             </h1>
-            <h2 className="user-name">
+            <h2 className="admin-user-name">
               {userData?.name || userData?.nombre || 'Administrador'}
             </h2>
-            <p className="user-email">
+            <p className="admin-user-email">
               {userData?.email || userData?.correo || ''}
             </p>
-            <span className="user-role">
+            <span className="admin-user-role">
               {userData?.rol === 1 ? 'Administrador' : 'Usuario'}
             </span>
           </div>
         </div>
         
-        <nav className="sidebar-nav">
+        <nav className="admin-sidebar-nav">
           <button 
-            className={`nav-btn ${activeTab === 'users' ? 'active' : ''}`}
+            className={`admin-nav-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
-            <FaUsers className="nav-icon" />
+            <FaUsers className="admin-nav-icon" />
             Usuarios
           </button>
 
           <button 
-            className={`nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
             onClick={() => setActiveTab('orders')}
           >
-            <FaClipboardList className="nav-icon" />
+            <FaClipboardList className="admin-nav-icon" />
             Pedidos
           </button>
 
           <button 
-            className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
-            <FaCog className="nav-icon" />
+            <FaCog className="admin-nav-icon" />
             Configuración
           </button>
 
           <button 
-            className="nav-btn logout"
+            className="admin-nav-btn admin-logout"
             onClick={handleLogout}
           >
-            <FaSignOutAlt className="nav-icon" />
+            <FaSignOutAlt className="admin-nav-icon" />
             Cerrar Sesión
           </button>
         </nav>
       </aside>
 
-      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <div className="content-wrapper">
-          <div className="header-section">
-            <h2 className="section-title">
-              Panel de Administración - Forra <span className="crazy-cursive">Style</span>
+      <main className={`admin-main-content ${sidebarOpen ? 'admin-sidebar-open' : 'admin-sidebar-closed'}`}>
+        <div className="admin-content-wrapper">
+          <div className="admin-header-section">
+            <h2 className="admin-section-title">
+              Panel de Administración - Forra <span className="admin-crazy-cursive">Style</span>
             </h2>
             
-            <div className="header-right">
+            <div className="admin-header-right">
               <button 
-                className="logout-btn-header" 
+                className="admin-logout-btn-header" 
                 onClick={handleLogout}
               >
                 <FaSignOutAlt />
@@ -296,7 +293,7 @@ const HomeAdmin = () => {
             </div>
           </div>
           
-          <div className="dynamic-content">
+          <div className="admin-dynamic-content">
             {renderContent()}
           </div>
         </div>

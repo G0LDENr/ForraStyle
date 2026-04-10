@@ -1,5 +1,5 @@
 /* Estilos generales */
-.dashboard-container {
+.admin-dashboard-container {
   display: flex;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -7,7 +7,7 @@
 }
 
 /* Tipografía cursiva */
-.crazy-cursive {
+.admin-crazy-cursive {
   font-family: 'Brush Script MT', 'Segoe Script', cursive;
   font-size: 1.4em;
   font-weight: 400;
@@ -15,7 +15,7 @@
 }
 
 /* Botón para abrir/cerrar el menú lateral */
-.sidebar-toggle {
+.admin-sidebar-toggle {
   position: fixed;
   top: 10px;
   left: 10px;
@@ -36,17 +36,17 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar-toggle:hover {
+.admin-sidebar-toggle:hover {
   background: #2563eb;
   transform: scale(1.05);
 }
 
-.sidebar-toggle.open {
+.admin-sidebar-toggle.open {
   background: #2563eb;
 }
 
 /* Menú lateral */
-.sidebar {
+.admin-sidebar {
   width: 280px;
   background-color: #1e3a8a;
   color: white;
@@ -61,49 +61,49 @@
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
-.sidebar.closed {
+.admin-sidebar.closed {
   transform: translateX(-100%);
 }
 
-.sidebar.open {
+.admin-sidebar.open {
   transform: translateX(0);
 }
 
 /* Header del sidebar */
-.sidebar-header {
+.admin-sidebar-header {
   padding: 2rem 1rem 1rem 1rem;
   border-bottom: 1px solid #3b82f6;
   margin-top: 40px;
 }
 
-.user-info {
+.admin-user-info {
   padding: 1rem 0;
   text-align: center;
 }
 
-.user-avatar {
+.admin-user-avatar {
   margin-bottom: 1rem;
   color: #bfdbfe;
 }
 
-.user-info h1 {
+.admin-user-info h1 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
   text-align: center;
 }
 
-.user-info h2 {
+.admin-user-info h2 {
   margin: 0 0 0.5rem 0;
   font-size: 1.1rem;
 }
 
-.user-info p {
+.admin-user-info p {
   margin: 0 0 0.3rem 0;
   color: #bfdbfe;
   font-size: 0.8rem;
 }
 
-.user-role {
+.admin-user-role {
   display: inline-block;
   background-color: #3b82f6;
   color: #fff;
@@ -114,7 +114,7 @@
 }
 
 /* Navegación del sidebar */
-.sidebar-nav {
+.admin-sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -122,7 +122,7 @@
   padding: 1rem;
 }
 
-.nav-btn {
+.admin-nav-btn {
   background: none;
   border: none;
   color: #bfdbfe;
@@ -137,35 +137,35 @@
   gap: 0.8rem;
 }
 
-.nav-btn:hover {
+.admin-nav-btn:hover {
   background-color: #3b82f6;
   color: white;
 }
 
-.nav-btn.active {
+.admin-nav-btn.active {
   background-color: #3b82f6;
   color: white;
   font-weight: 500;
 }
 
-.nav-btn.logout {
+.admin-nav-btn.admin-logout {
   margin-top: auto;
   border-top: 1px solid #3b82f6;
   margin-top: 1rem;
   color: #fca5a5;
 }
 
-.nav-btn.logout:hover {
+.admin-nav-btn.admin-logout:hover {
   background-color: #ef4444;
   color: white;
 }
 
-.nav-icon {
+.admin-nav-icon {
   font-size: 1rem;
 }
 
 /* Contenido principal */
-.main-content {
+.admin-main-content {
   flex-grow: 1;
   background-color: #f3f4f6;
   padding: 2rem;
@@ -173,15 +173,15 @@
   min-height: 100vh;
 }
 
-.main-content.sidebar-open {
+.admin-main-content.admin-sidebar-open {
   margin-left: 280px;
 }
 
-.main-content.sidebar-closed {
+.admin-main-content.admin-sidebar-closed {
   margin-left: 0;
 }
 
-.content-wrapper {
+.admin-content-wrapper {
   background-color: white;
   border-radius: 10px;
   padding: 2rem;
@@ -190,7 +190,7 @@
 }
 
 /* Header section - TÍTULO CENTRADO */
-.header-section {
+.admin-header-section {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -200,7 +200,7 @@
   position: relative;
 }
 
-.header-right {
+.admin-header-right {
   position: absolute;
   right: 0;
   display: flex;
@@ -209,7 +209,7 @@
 }
 
 /* Título de sección - CENTRADO */
-.section-title {
+.admin-section-title {
   color: #1e3a8a;
   font-size: 1.5rem;
   font-weight: 600;
@@ -218,7 +218,7 @@
 }
 
 /* Botón de cerrar sesión en header */
-.logout-btn-header {
+.admin-logout-btn-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -233,16 +233,14 @@
   font-size: 0.85rem;
 }
 
-.logout-btn-header:hover {
+.admin-logout-btn-header:hover {
   background-color: #dc2626;
 }
 
 /* Dynamic content */
-.dynamic-content {
+.admin-dynamic-content {
   margin-top: 1rem;
 }
-
-/* src/css/home/home-admin.css - Agrega al final */
 
 /* Estilos para la sección de pedidos del admin */
 .admin-orders-container {
@@ -258,14 +256,14 @@
 }
 
 /* Tarjetas de estadísticas */
-.orders-stats {
+.admin-orders-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.stat-card {
+.admin-stat-card {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
   padding: 1.5rem;
@@ -274,20 +272,20 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.stat-card h3 {
+.admin-stat-card h3 {
   font-size: 0.875rem;
   margin-bottom: 0.5rem;
   opacity: 0.9;
 }
 
-.stat-card p {
+.admin-stat-card p {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
 }
 
 /* Tabla de administración */
-.orders-table-container {
+.admin-orders-table-container {
   overflow-x: auto;
   margin-top: 1rem;
 }
@@ -325,14 +323,14 @@
   background: #f9fafb;
 }
 
-.empty-row {
+.admin-empty-row {
   text-align: center;
   color: #9ca3af;
   padding: 2rem;
 }
 
 /* Badges de estado */
-.status-badge {
+.admin-status-badge {
   display: inline-block;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
@@ -346,14 +344,14 @@
   padding: 1rem 0;
 }
 
-.settings-card {
+.admin-settings-card {
   background: #f9fafb;
   border-radius: 0.75rem;
   padding: 1.5rem;
   border: 1px solid #e5e7eb;
 }
 
-.setting-item {
+.admin-setting-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -361,20 +359,20 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-.setting-item:last-child {
+.admin-setting-item:last-child {
   border-bottom: none;
 }
 
-.setting-item label {
+.admin-setting-item label {
   font-weight: 600;
   color: #374151;
 }
 
-.setting-item span {
+.admin-setting-item span {
   color: #6b7280;
 }
 
-.badge-admin {
+.admin-badge-admin {
   background: #3b82f6;
   color: white;
   padding: 0.25rem 0.75rem;
@@ -382,7 +380,7 @@
   font-size: 0.75rem;
 }
 
-.btn-clear-data {
+.admin-btn-clear-data {
   background: #ef4444;
   color: white;
   border: none;
@@ -393,22 +391,22 @@
   transition: all 0.2s;
 }
 
-.btn-clear-data:hover {
+.admin-btn-clear-data:hover {
   background: #dc2626;
   transform: translateY(-1px);
 }
 
 /* Responsive para el admin */
 @media (max-width: 768px) {
-  .orders-stats {
+  .admin-orders-stats {
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .stat-card {
+  .admin-stat-card {
     padding: 1rem;
   }
   
-  .stat-card p {
+  .admin-stat-card p {
     font-size: 1.25rem;
   }
   
@@ -418,7 +416,7 @@
     font-size: 0.75rem;
   }
   
-  .setting-item {
+  .admin-setting-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
@@ -426,7 +424,7 @@
 }
 
 @media (max-width: 480px) {
-  .orders-stats {
+  .admin-orders-stats {
     grid-template-columns: 1fr;
   }
   
@@ -437,7 +435,7 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .sidebar-toggle {
+  .admin-sidebar-toggle {
     top: 15px;
     left: 15px;
     padding: 12px;
@@ -446,40 +444,40 @@
     font-size: 1.3rem;
   }
   
-  .sidebar {
+  .admin-sidebar {
     width: 100%;
   }
   
-  .main-content.sidebar-open {
+  .admin-main-content.admin-sidebar-open {
     margin-left: 0;
   }
   
-  .main-content {
+  .admin-main-content {
     padding: 1rem;
   }
   
-  .content-wrapper {
+  .admin-content-wrapper {
     padding: 1.5rem;
     min-height: auto;
   }
   
-  .header-section {
+  .admin-header-section {
     flex-direction: column;
     gap: 1rem;
     align-items: center;
   }
   
-  .header-right {
+  .admin-header-right {
     position: static;
   }
   
-  .section-title {
+  .admin-section-title {
     font-size: 1.25rem;
   }
 }
 
 @media (max-width: 480px) {
-  .sidebar-toggle {
+  .admin-sidebar-toggle {
     top: 10px;
     left: 10px;
     padding: 10px;
@@ -488,11 +486,11 @@
     font-size: 1.2rem;
   }
   
-  .section-title {
+  .admin-section-title {
     font-size: 1.1rem;
   }
   
-  .crazy-cursive {
+  .admin-crazy-cursive {
     font-size: 1.2em;
   }
 }
