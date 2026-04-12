@@ -603,6 +603,22 @@
   color: #3b82f6;
 }
 
+/* user.css - agregar */
+.disabled-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.userlist-edit-btn.disabled-btn:hover,
+.userlist-delete-btn.disabled-btn:hover {
+  transform: none;
+  background-color: #3b82f6;
+}
+
+.userlist-delete-btn.disabled-btn:hover {
+  background-color: #ef4444;
+}
+
 /* Responsive para el título */
 @media (max-width: 768px) {
   .userlist-title {

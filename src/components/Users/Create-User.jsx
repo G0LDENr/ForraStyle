@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { UserController } from '../../controllers/UserController';
 import '../../css/user/create-user.css';
 
-export function CreateUserModal({ isOpen, onClose, onUserCreated }) {
+export function CreateUserModal({ isOpen, onClose, onUserCreated, currentUserRole, currentAdminId }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     age: '',
     password: '',
-    rol: 2 // Por defecto Usuario (2)
+    rol: 2
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -77,10 +77,15 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }) {
       phone: formData.phone || null,
       age: formData.age || null,
       password: formData.password,
-      rol: parseInt(formData.rol) // Asegurar que sea número
+      rol: parseInt(formData.rol)
     };
     
-    const result = await UserController.createUser(userData);
+    // Pasar los parámetros correctos
+    const result = await UserController.createUser(
+      userData, 
+      currentAdminId, 
+      currentUserRole
+    );
     
     if (result.success) {
       setFormData({ 
@@ -101,6 +106,32 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }) {
   };
 
   if (!isOpen) return null;
+
+  // Determinar opciones de rol según el rol del usuario actual
+  const getRoleOptions = () => {
+    if (currentUserRole === 0) {
+      return (
+        <>
+          <option value={2}>Usuario Normal</option>
+          <option value={1}>Administrador</option>
+          <option value={0}>Super Administrador</option>
+        </>
+      );
+    } else if (currentUserRole === 1) {
+      return (
+        <>
+          <option value={2}>Usuario Normal</option>
+          <option value={1}>Administrador</option>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <option value={2}>Usuario Normal</option>
+        </>
+      );
+    }
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -194,11 +225,12 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated }) {
               disabled={loading}
               className="rol-select"
             >
-              <option value={2}>Usuario Normal</option>
-              <option value={1}>Administrador</option>
+              {getRoleOptions()}
             </select>
             <small className="form-hint">
-              {formData.rol === 1 ? 'El administrador tiene acceso total al sistema' : 'El usuario solo tiene acceso a sus pedidos'}
+              {formData.rol === 1 ? 'El administrador tiene acceso al panel de control' : 
+               formData.rol === 0 ? 'El Super Administrador tiene control total' :
+               'El usuario solo tiene acceso a sus pedidos'}
             </small>
           </div>
           

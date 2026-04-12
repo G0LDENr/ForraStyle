@@ -281,8 +281,22 @@ export function UserList({ currentAdminId, currentUserRole }) {
                 <td>{user.age ? `${user.age} años` : '—'}</td>
                 <td><span className={`user-role-badge ${user.rol === 1 ? 'role-admin' : user.rol === 0 ? 'role-superadmin' : 'role-user'}`}>{user.rol === 0 ? 'Super Admin' : user.rol === 1 ? 'Administrador' : 'Usuario'}</span></td>
                 <td className="actions-cell">
-                  {permissions.canEdit && <button onClick={() => handleEdit(user)} className="userlist-edit-btn" disabled={user.rol === 0 && currentUserRole !== 0}>Editar</button>}
-                  {permissions.canDelete && <button onClick={() => handleDeleteClick(user)} className="userlist-delete-btn" disabled={user.rol === 0 && !permissions.canDeleteSuperAdmin}>Eliminar</button>}
+                  <button 
+                    onClick={() => permissions.canEdit ? handleEdit(user) : null} 
+                    className={`userlist-edit-btn ${!permissions.canEdit ? 'disabled-btn' : ''}`}
+                    disabled={!permissions.canEdit || (user.rol === 0 && currentUserRole !== 0)}
+                    style={{ opacity: !permissions.canEdit ? 0.5 : 1, cursor: !permissions.canEdit ? 'not-allowed' : 'pointer' }}
+                  >
+                    Editar
+                  </button>
+                  <button 
+                    onClick={() => permissions.canDelete ? handleDeleteClick(user) : null} 
+                    className={`userlist-delete-btn ${!permissions.canDelete ? 'disabled-btn' : ''}`}
+                    disabled={!permissions.canDelete || (user.rol === 0 && !permissions.canDeleteSuperAdmin)}
+                    style={{ opacity: !permissions.canDelete ? 0.5 : 1, cursor: !permissions.canDelete ? 'not-allowed' : 'pointer' }}
+                  >
+                    Eliminar
+                  </button>
                 </td>
               </tr>
             ))}
@@ -310,7 +324,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
         </>
       )}
 
-      <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onUserCreated={handleUserCreated} currentUserRole={currentUserRole} />
+      <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onUserCreated={handleUserCreated} currentUserRole={currentUserRole} currentAdminId={currentAdminId}/>
       <EditUserModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setSelectedUser(null); }} onUserUpdated={handleUserUpdated} user={selectedUser} currentUserRole={currentUserRole} />
 
       {showConfirmModal && (
