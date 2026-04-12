@@ -49,7 +49,32 @@ const Login = ({ onLoginSuccess }) => {
       localStorage.setItem('token', token);
       localStorage.setItem('userRole', result.data.rol); // Guardar rol separadamente
       
-      setSuccess(`¡Bienvenido de vuelta, ${result.data.name}! Redirigiendo...`);
+      // Crear permisos por defecto para nuevos admins (rol 1)
+      if (result.data.rol === 1) {
+        // Verificar si ya tiene permisos configurados
+        const existingPermissions = localStorage.getItem(`admin_permissions_${result.data.id}`);
+        if (!existingPermissions) {
+          // Permisos por defecto para nuevos admins (todos deshabilitados)
+          const defaultPermissions = {
+            createUsers: { enabled: false, dailyLimit: 0, currentCount: 0, lastReset: new Date().toDateString() },
+            editUsers: { enabled: false, canEditAdmins: false },
+            deleteUsers: { enabled: false, canDeleteAdmins: false },
+            viewReports: { enabled: false },
+            manageOrders: { enabled: false }
+          };
+          localStorage.setItem(`admin_permissions_${result.data.id}`, JSON.stringify(defaultPermissions));
+        }
+      }
+      
+      // Mensaje de bienvenida personalizado según el rol
+      let welcomeMessage = `¡Bienvenido de vuelta, ${result.data.name}! Redirigiendo...`;
+      if (result.data.rol === 0) {
+        welcomeMessage = `¡Bienvenido Super Administrador ${result.data.name}! Redirigiendo al panel de control...`;
+      } else if (result.data.rol === 1) {
+        welcomeMessage = `¡Bienvenido Administrador ${result.data.name}! Redirigiendo al panel de control...`;
+      }
+      
+      setSuccess(welcomeMessage);
       
       setTimeout(() => {
         if (onLoginSuccess) {
@@ -57,7 +82,8 @@ const Login = ({ onLoginSuccess }) => {
         }
         
         // Redirigir según el rol
-        if (result.data.rol === 1) {
+        if (result.data.rol === 1 || result.data.rol === 0) {
+          // Tanto admin (rol 1) como super admin (rol 0) van a /admin
           navigate('/admin');
         } else {
           navigate('/home');
@@ -77,6 +103,18 @@ const Login = ({ onLoginSuccess }) => {
 
     if (formData.password.length < 6) {
       setError('La contraseña debe tener al menos 6 caracteres');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.phone && formData.phone.length < 10) {
+      setError('El teléfono debe tener al menos 10 dígitos');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.age && (formData.age < 18 || formData.age > 120)) {
+      setError('La edad debe estar entre 18 y 120 años');
       setLoading(false);
       return;
     }
@@ -110,7 +148,12 @@ const Login = ({ onLoginSuccess }) => {
           if (onLoginSuccess) {
             onLoginSuccess(userWithToken);
           }
-          navigate('/home'); // Los usuarios normales van a /home
+          navigate('/home'); // Los usuarios normales (rol 2) van a /home
+        }, 1500);
+      } else {
+        // Si el auto login falla, redirigir al login
+        setTimeout(() => {
+          toggleMode();
         }, 1500);
       }
     } else {
@@ -164,6 +207,14 @@ const Login = ({ onLoginSuccess }) => {
                     ? "Inicia sesión para acceder a tu cuenta y disfrutar de todos nuestros servicios." 
                     : "Crea tu cuenta y únete a nuestra comunidad. Es rápido y sencillo."}
                 </p>
+                {!isLogin && (
+                  <div className="info-box">
+                    <p className="info-text">
+                      ℹ️ Al registrarte, crearás una cuenta de usuario normal. 
+                      Los administradores son asignados por el equipo de ForraStyle.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -253,6 +304,7 @@ const Login = ({ onLoginSuccess }) => {
                         onChange={handleChange}
                         placeholder="5551234567"
                       />
+                      <small className="input-hint">Mínimo 10 dígitos</small>
                     </div>
 
                     <div className="form-group">
@@ -263,7 +315,10 @@ const Login = ({ onLoginSuccess }) => {
                         value={formData.age}
                         onChange={handleChange}
                         placeholder="18"
+                        min="18"
+                        max="120"
                       />
+                      <small className="input-hint">Debes ser mayor de 18 años</small>
                     </div>
                   </>
                 )}

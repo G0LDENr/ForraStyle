@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserList } from '../components/Users/User';
-import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog } from 'react-icons/fa';
+import PermissionManager from '../components/Admin/PermissionManager';
+import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog, FaShieldAlt } from 'react-icons/fa';
 import '../css/home/home-admin.css';
 
 const HomeAdmin = () => {
@@ -11,6 +12,7 @@ const HomeAdmin = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [adminPermissions, setAdminPermissions] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -27,7 +29,7 @@ const HomeAdmin = () => {
       return;
     }
 
-    if (userRole !== '1') {
+    if (userRole !== '1' && userRole !== '0') {
       console.log('No es administrador, redirigiendo a home');
       navigate('/home');
       return;
@@ -39,6 +41,11 @@ const HomeAdmin = () => {
       setUserData(userParsed);
       loadOrders();
       loadUsers();
+      
+      // Cargar permisos si es admin (rol 1)
+      if (userParsed.rol === 1) {
+        loadAdminPermissions(userParsed.id);
+      }
     } catch (error) {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('token');
@@ -47,6 +54,23 @@ const HomeAdmin = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+  const loadAdminPermissions = (adminId) => {
+    const permissions = localStorage.getItem(`admin_permissions_${adminId}`);
+    if (permissions) {
+      setAdminPermissions(JSON.parse(permissions));
+    } else {
+      // Permisos por defecto para nuevos admins
+      const defaultPermissions = {
+        createUsers: { enabled: false, dailyLimit: 0, currentCount: 0, lastReset: new Date().toDateString() },
+        editUsers: { enabled: false, canEditAdmins: false },
+        deleteUsers: { enabled: false, canDeleteAdmins: false },
+        viewReports: { enabled: false },
+        manageOrders: { enabled: false }
+      };
+      setAdminPermissions(defaultPermissions);
+    }
+  };
 
   const loadOrders = () => {
     const savedOrders = localStorage.getItem('orders');
@@ -94,12 +118,56 @@ const HomeAdmin = () => {
     }
   };
 
+  // Verificar si el admin puede ver pedidos
+  const canViewOrders = () => {
+    if (userData?.rol === 0) return true;
+    return adminPermissions?.manageOrders?.enabled || false;
+  };
+
+  // Verificar si el admin puede ver configuraciones
+  const canViewSettings = () => {
+    if (userData?.rol === 0) return true;
+    return adminPermissions?.viewReports?.enabled || false;
+  };
+
   const renderContent = () => {
     switch(activeTab) {
       case 'users':
-        return <UserList />;
+        return (
+          <UserList 
+            currentAdminId={userData?.id}
+            currentUserRole={userData?.rol}
+          />
+        );
+      
+      case 'permissions':
+        // Solo visible para super admin (rol 0)
+        if (userData?.rol === 0) {
+          return (
+            <PermissionManager 
+              currentUserRole={userData?.rol}
+              currentUserId={userData?.id}
+            />
+          );
+        }
+        return (
+          <div className="admin-access-denied">
+            <FaShieldAlt size={48} />
+            <h3>Acceso Denegado</h3>
+            <p>No tienes permisos para acceder a esta sección</p>
+          </div>
+        );
       
       case 'orders':
+        if (!canViewOrders()) {
+          return (
+            <div className="admin-access-denied">
+              <FaShieldAlt size={48} />
+              <h3>Acceso Denegado</h3>
+              <p>No tienes permisos para ver los pedidos</p>
+            </div>
+          );
+        }
         return (
           <div className="admin-orders-container">
             <h2 className="admin-section-title">Gestión de Pedidos</h2>
@@ -167,13 +235,24 @@ const HomeAdmin = () => {
         );
       
       case 'settings':
+        if (!canViewSettings()) {
+          return (
+            <div className="admin-access-denied">
+              <FaShieldAlt size={48} />
+              <h3>Acceso Denegado</h3>
+              <p>No tienes permisos para ver la configuración</p>
+            </div>
+          );
+        }
         return (
           <div className="admin-settings-container">
             <h2 className="admin-section-title">Configuración del Sistema</h2>
             <div className="admin-settings-card">
               <div className="admin-setting-item">
                 <label>Rol del usuario actual:</label>
-                <span className="admin-badge-admin">Administrador</span>
+                <span className={userData?.rol === 0 ? 'admin-badge-super' : 'admin-badge-admin'}>
+                  {userData?.rol === 0 ? 'Super Administrador' : 'Administrador'}
+                </span>
               </div>
               <div className="admin-setting-item">
                 <label>Versión del sistema:</label>
@@ -187,26 +266,46 @@ const HomeAdmin = () => {
                 <label>Total de pedidos:</label>
                 <span>{orders.length}</span>
               </div>
-              <div className="admin-setting-item">
-                <button 
-                  className="admin-btn-clear-data"
-                  onClick={() => {
-                    if (window.confirm('¿Estás seguro de limpiar todos los datos?')) {
-                      localStorage.removeItem('orders');
-                      setOrders([]);
-                      alert('Datos limpiados correctamente');
-                    }
-                  }}
-                >
-                  Limpiar todos los datos
-                </button>
-              </div>
+              
+              {/* Mostrar permisos actuales si es admin */}
+              {userData?.rol === 1 && adminPermissions && (
+                <div className="admin-permissions-info">
+                  <h4>Tus permisos actuales:</h4>
+                  <ul>
+                    <li>Crear usuarios: {adminPermissions.createUsers?.enabled ? `Sí (${adminPermissions.createUsers.dailyLimit === 0 ? 'sin límite' : adminPermissions.createUsers.dailyLimit + '/día'})` : 'No'}</li>
+                    <li>Editar usuarios: {adminPermissions.editUsers?.enabled ? 'Sí' : 'No'}</li>
+                    <li>Eliminar usuarios: {adminPermissions.deleteUsers?.enabled ? 'Sí' : 'No'}</li>
+                    <li>Ver reportes: {adminPermissions.viewReports?.enabled ? 'Sí' : 'No'}</li>
+                    <li>Gestionar pedidos: {adminPermissions.manageOrders?.enabled ? 'Sí' : 'No'}</li>
+                  </ul>
+                </div>
+              )}
+              
+              {userData?.rol === 0 && (
+                <div className="admin-setting-item">
+                  <button 
+                    className="admin-btn-clear-data"
+                    onClick={() => {
+                      if (window.confirm('¿Estás seguro de limpiar todos los datos?')) {
+                        localStorage.removeItem('orders');
+                        setOrders([]);
+                        alert('Datos limpiados correctamente');
+                      }
+                    }}
+                  >
+                    Limpiar todos los datos
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
       
       default:
-        return <UserList />;
+        return <UserList 
+          currentAdminId={userData?.id}
+          currentUserRole={userData?.rol}
+        />;
     }
   };
 
@@ -234,8 +333,8 @@ const HomeAdmin = () => {
             <p className="admin-user-email">
               {userData?.email || userData?.correo || ''}
             </p>
-            <span className="admin-user-role">
-              {userData?.rol === 1 ? 'Administrador' : 'Usuario'}
+            <span className={`admin-user-role ${userData?.rol === 0 ? 'role-super' : 'role-admin'}`}>
+              {userData?.rol === 0 ? 'Super Administrador' : 'Administrador'}
             </span>
           </div>
         </div>
@@ -249,21 +348,38 @@ const HomeAdmin = () => {
             Usuarios
           </button>
 
-          <button 
-            className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            <FaClipboardList className="admin-nav-icon" />
-            Pedidos
-          </button>
+          {/* Solo super admin puede ver gestión de permisos */}
+          {userData?.rol === 0 && (
+            <button 
+              className={`admin-nav-btn ${activeTab === 'permissions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('permissions')}
+            >
+              <FaShieldAlt className="admin-nav-icon" />
+              Gestión de Permisos
+            </button>
+          )}
 
-          <button 
-            className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <FaCog className="admin-nav-icon" />
-            Configuración
-          </button>
+          {/* Mostrar pedidos solo si tiene permiso */}
+          {canViewOrders() && (
+            <button 
+              className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
+              onClick={() => setActiveTab('orders')}
+            >
+              <FaClipboardList className="admin-nav-icon" />
+              Pedidos
+            </button>
+          )}
+
+          {/* Mostrar configuración solo si tiene permiso */}
+          {canViewSettings() && (
+            <button 
+              className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('settings')}
+            >
+              <FaCog className="admin-nav-icon" />
+              Configuración
+            </button>
+          )}
 
           <button 
             className="admin-nav-btn admin-logout"
@@ -283,6 +399,15 @@ const HomeAdmin = () => {
             </h2>
             
             <div className="admin-header-right">
+              {/* Mostrar estadísticas diarias si es admin */}
+              {userData?.rol === 1 && adminPermissions?.createUsers?.enabled && (
+                <div className="admin-daily-stats">
+                  <span className="stats-badge">
+                    Creados hoy: {adminPermissions.createUsers.currentCount}/{adminPermissions.createUsers.dailyLimit === 0 ? '∞' : adminPermissions.createUsers.dailyLimit}
+                  </span>
+                </div>
+              )}
+              
               <button 
                 className="admin-logout-btn-header" 
                 onClick={handleLogout}

@@ -1,0 +1,343 @@
+.permission-manager {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* Título - Mismo estilo que UserList */
+.permission-header {
+  margin-bottom: 24px;
+}
+
+.permission-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.permission-title-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+}
+
+/* Barra de búsqueda */
+.permission-search-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.search-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px 10px 38px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.refresh-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Tabla */
+.permission-table-container {
+  overflow-x: auto;
+}
+
+.permission-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.permission-table thead tr {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.permission-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 13px;
+}
+
+.permission-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.permission-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Nombre del administrador - SIN NEGRITA */
+.permission-table td:first-child strong {
+  font-weight: normal;
+}
+
+.current-user-badge {
+  display: inline-block;
+  background: #10b981;
+  color: white;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+
+/* Estados de permisos */
+.permission-status {
+  display: flex;
+  align-items: center;
+}
+
+.permission-enabled {
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+  flex-wrap: wrap;
+}
+
+.permission-enabled small {
+  font-size: 10px;
+  color: #6b7280;
+  font-weight: normal;
+}
+
+.permission-disabled {
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* Botón de editar */
+.edit-permissions-btn {
+  padding: 6px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.3s;
+}
+
+.edit-permissions-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Información de paginación - SIN BORDE ARRIBA */
+.permission-pagination-info {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.permission-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.pagination-btn {
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-current {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Mensajes */
+.permission-message {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  animation: slideDown 0.3s ease;
+}
+
+.permission-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+
+/* Estados de carga y error */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.permission-loading, .permission-error {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+}
+
+.retry-btn {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.retry-btn:hover {
+  background: #2563eb;
+}
+
+/* Sin datos */
+.no-admins {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.no-admins-hint {
+  font-size: 12px;
+  margin-top: 10px;
+  color: #9ca3af;
+}
+
+/* Acceso denegado */
+.permission-denied {
+  text-align: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+}
+
+.permission-denied svg {
+  color: #ef4444;
+  margin-bottom: 20px;
+}
+
+/* Animaciones */
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .permission-manager {
+    padding: 16px;
+  }
+  
+  .permission-title {
+    font-size: 1.2rem;
+  }
+  
+  .permission-title-icon {
+    font-size: 1.2rem;
+  }
+  
+  .permission-search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .search-wrapper {
+    max-width: 100%;
+  }
+  
+  .refresh-btn {
+    justify-content: center;
+  }
+  
+  .permission-table td {
+    padding: 10px;
+  }
+}
