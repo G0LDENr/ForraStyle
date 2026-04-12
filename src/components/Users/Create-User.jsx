@@ -80,7 +80,9 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, currentUserRol
       rol: parseInt(formData.rol)
     };
     
-    // Pasar los parámetros correctos
+    console.log('📤 Enviando userData:', userData);
+    
+    // Llamar al controlador directamente
     const result = await UserController.createUser(
       userData, 
       currentAdminId, 
@@ -96,7 +98,10 @@ export function CreateUserModal({ isOpen, onClose, onUserCreated, currentUserRol
         password: '',
         rol: 2 
       });
-      onUserCreated();
+      // Llamar a onUserCreated sin parámetros porque ya se recargará desde UserList
+      if (onUserCreated) {
+        await onUserCreated();
+      }
       onClose();
     } else {
       setError(result.error);

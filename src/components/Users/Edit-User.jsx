@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserController } from '../../controllers/UserController';
-import { FaCheckCircle, FaSpinner } from 'react-icons/fa';
+import { FaCheckCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
 import '../../css/user/edit-user.css';
 
 export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUserRole, currentAdminId }) {
@@ -29,7 +29,6 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
       setError('');
       setSuccess('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
 
   const handleInputChange = (e) => {
@@ -43,6 +42,10 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Evitar múltiples envíos
+    if (loading) return;
+    
     setLoading(true);
     setError('');
     setSuccess('');
@@ -97,27 +100,37 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
       userData.password = formData.password;
     }
     
-    const result = await UserController.updateUser(
-      user.id, 
-      userData, 
-      currentAdminId, 
-      currentUserRole
-    );
-    
-    if (result.success) {
-      setSuccess('✅ Usuario actualizado exitosamente');
-      onUserUpdated(user.id, userData);
+    try {
+      const result = await UserController.updateUser(
+        user.id, 
+        userData, 
+        currentAdminId, 
+        currentUserRole
+      );
       
-      // Cerrar el modal después de 4 segundos
-      setTimeout(() => {
-        onClose();
-        setSuccess('');
-      }, 4000);
-    } else {
-      setError(result.error);
+      if (result.success) {
+        setSuccess('Usuario actualizado exitosamente');
+        
+        // Esperar a que onUserUpdated termine antes de cerrar
+        if (onUserUpdated) {
+          await onUserUpdated(user.id, userData);
+        }
+        
+        // Cerrar el modal después de 2 segundos
+        setTimeout(() => {
+          onClose();
+          setSuccess('');
+          setLoading(false);
+        }, 2000);
+      } else {
+        setError(result.error);
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error('Error al actualizar usuario:', error);
+      setError(error.message || 'Error al actualizar el usuario');
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   if (!isOpen) return null;
@@ -127,16 +140,13 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
     const options = [];
     
     if (currentUserRole === 0) {
-      // Super Admin puede asignar cualquier rol
       options.push(<option key={0} value={0}>Super Administrador</option>);
       options.push(<option key={1} value={1}>Administrador</option>);
       options.push(<option key={2} value={2}>Usuario Normal</option>);
     } else if (currentUserRole === 1) {
-      // Admin normal solo puede asignar Administrador o Usuario Normal
       options.push(<option key={1} value={1}>Administrador</option>);
       options.push(<option key={2} value={2}>Usuario Normal</option>);
     } else {
-      // Usuario normal solo puede ver su propio rol
       options.push(<option key={formData.rol} value={formData.rol}>
         {formData.rol === 0 ? 'Super Administrador' : formData.rol === 1 ? 'Administrador' : 'Usuario Normal'}
       </option>);
@@ -147,13 +157,9 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
 
   // Determinar si puede cambiar el rol
   const canChangeRole = () => {
-    // No puede cambiar el rol de un Super Admin a menos que sea Super Admin
     if (user?.rol === 0 && currentUserRole !== 0) return false;
-    // No puede cambiar su propio rol
     if (user?.id === currentAdminId) return false;
-    // Si es Super Admin, siempre puede
     if (currentUserRole === 0) return true;
-    // Si es Admin, puede cambiar roles excepto a Super Admin
     if (currentUserRole === 1 && user?.rol !== 0) return true;
     return false;
   };
@@ -170,7 +176,8 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUse
         
         {error && (
           <div className="edit-error-message">
-            {error}
+            <FaExclamationTriangle className="edit-error-icon" />
+            <span>{error}</span>
           </div>
         )}
         

@@ -34,11 +34,13 @@ export const AdminPermissionModel = {
       create_last_reset: today,
       can_edit_users: false,
       edit_daily_limit: 0,
+      edit_current_count: 0,
+      edit_last_reset: today,
       can_edit_admins: false,
       can_delete_users: false,
       can_delete_admins: false,
       can_delete_super_admin: false,
-      user_edit_counts: {}  // Guardará { "userId": 2, "otroId": 1 }
+      user_edit_counts: {}
     };
 
     const { data, error } = await supabase
@@ -212,19 +214,40 @@ export const AdminPermissionModel = {
 
   // Obtener permisos formateados para el frontend
   async getUserPermissions(adminId) {
-    const permissions = await this.getByAdminId(adminId);
-    
-    return {
-      canCreate: permissions.can_create_users || false,
-      canEdit: permissions.can_edit_users || false,
-      canDelete: permissions.can_delete_users || false,
-      dailyLimit: permissions.create_daily_limit || 0,
-      currentDailyCount: permissions.create_current_count || 0,
-      canEditAdmins: permissions.can_edit_admins || false,
-      canDeleteAdmins: permissions.can_delete_admins || false,
-      canDeleteSuperAdmin: permissions.can_delete_super_admin || false,
-      editDailyLimit: permissions.edit_daily_limit || 0
-    };
+    try {
+      const permissions = await this.getByAdminId(adminId);
+      
+      if (!permissions) {
+        return {
+          canCreate: false,
+          canEdit: false,
+          canDelete: false,
+          dailyLimit: 0,
+          currentDailyCount: 0,
+          canEditAdmins: false,
+          canDeleteAdmins: false,
+          canDeleteSuperAdmin: false,
+          editDailyLimit: 0,
+          currentEditCount: 0
+        };
+      }
+      
+      return {
+        canCreate: permissions.can_create_users || false,
+        canEdit: permissions.can_edit_users || false,
+        canDelete: permissions.can_delete_users || false,
+        dailyLimit: permissions.create_daily_limit || 0,
+        currentDailyCount: permissions.create_current_count || 0,
+        canEditAdmins: permissions.can_edit_admins || false,
+        canDeleteAdmins: permissions.can_delete_admins || false,
+        canDeleteSuperAdmin: permissions.can_delete_super_admin || false,
+        editDailyLimit: permissions.edit_daily_limit || 0,
+        currentEditCount: permissions.edit_current_count || 0
+      };
+    } catch (error) {
+      console.error('Error en getUserPermissions:', error);
+      return null;
+    }
   },
 
   // Eliminar permisos
@@ -236,5 +259,30 @@ export const AdminPermissionModel = {
     
     if (error) throw error;
     return true;
+  },
+
+  async resetCounters(adminId) {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      
+      const { data, error } = await supabase
+        .from('admin_permissions')
+        .update({
+          create_current_count: 0,
+          create_last_reset: today,
+          edit_current_count: 0,
+          edit_last_reset: today,
+          user_edit_counts: {}
+        })
+        .eq('admin_id', adminId)
+        .select();
+      
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error en resetCounters:', error);
+      throw error;
+    }
   }
+
 };

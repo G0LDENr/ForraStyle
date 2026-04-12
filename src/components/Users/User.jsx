@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { UserController } from '../../controllers/UserController';
 import { CreateUserModal } from './Create-User';
 import { EditUserModal } from './Edit-User';
-import { FaSpinner, FaCheckCircle, FaShieldAlt, FaUsers } from 'react-icons/fa';
+import { FaSpinner, FaCheckCircle, FaUsers, FaExclamationTriangle, FaSync } from 'react-icons/fa';
 import '../../css/user/user.css';
 
 export function UserList({ currentAdminId, currentUserRole }) {
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -26,7 +27,9 @@ export function UserList({ currentAdminId, currentUserRole }) {
     canDeleteAdmins: false,
     canDeleteSuperAdmin: false,
     editDailyLimit: 0,
-    currentEditCount: 0
+    currentEditCount: 0,
+    createDailyLimit: 0,
+    currentCreateCount: 0
   });
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -37,75 +40,227 @@ export function UserList({ currentAdminId, currentUserRole }) {
   const [showPermissionDenied, setShowPermissionDenied] = useState(false);
   const [permissionError, setPermissionError] = useState('');
 
+  // Cargar datos SOLO UNA VEZ cuando el componente se monta
   useEffect(() => {
-    loadUserPermissions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentAdminId, currentUserRole]);
-
-  useEffect(() => {
-    loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    console.log('📌 UserList montado');
+    loadAllData();
   }, []);
 
-  const loadUserPermissions = async () => {
-    if (currentUserRole === 0) {
-      setPermissions({
-        canCreate: true,
-        canEdit: true,
-        canDelete: true,
-        canEditAdmins: true,
-        canDeleteAdmins: true,
-        canDeleteSuperAdmin: true,
-        editDailyLimit: 0,
-        currentEditCount: 0
-      });
-      return;
-    }
-
-    if (currentUserRole === 1 && currentAdminId) {
-      const userPermissions = await UserController.getUserPermissions(currentAdminId, currentUserRole);
-      if (userPermissions) {
+  const loadAllData = async () => {
+    setLoading(true);
+    console.log('🚀 Cargando datos...');
+    
+    try {
+      // Obtener el adminId del localStorage si no viene por props
+      let adminId = currentAdminId;
+      let userRole = currentUserRole;
+      
+      if (!adminId || userRole === undefined) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          adminId = user.id;
+          userRole = user.rol;
+          console.log('📌 Datos obtenidos del localStorage:', { adminId, userRole });
+        }
+      }
+      
+      // Cargar usuarios
+      const usersResult = await UserController.getUsers(adminId, userRole);
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+        console.log('✅ Usuarios cargados:', usersResult.data.length);
+      } else {
+        setError(usersResult.error);
+      }
+      
+      // Cargar permisos si es admin
+      if (userRole === 1 && adminId) {
+        await loadPermissionsAndStats(adminId, userRole);
+      } else if (userRole === 0) {
         setPermissions({
-          canCreate: userPermissions.canCreate || false,
-          canEdit: userPermissions.canEdit || false,
-          canDelete: userPermissions.canDelete || false,
-          canEditAdmins: userPermissions.canEditAdmins || false,
-          canDeleteAdmins: userPermissions.canDeleteAdmins || false,
-          canDeleteSuperAdmin: userPermissions.canDeleteSuperAdmin || false,
-          editDailyLimit: userPermissions.editDailyLimit || 0,
-          currentEditCount: userPermissions.currentEditCount || 0
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAdmins: true,
+          canDeleteAdmins: true,
+          canDeleteSuperAdmin: true,
+          editDailyLimit: 0,
+          currentEditCount: 0,
+          createDailyLimit: 0,
+          currentCreateCount: 0
         });
       }
-
-      const stats = await UserController.getDailyStats(currentAdminId, currentUserRole);
-      setDailyStats(stats);
-
-      const editStatsData = await UserController.getDailyEditStats(currentAdminId, currentUserRole);
-      setEditStats(editStatsData);
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+      console.log('🏁 Carga finalizada');
     }
   };
 
-  const loadUsers = async () => {
-    setLoading(true);
-    const result = await UserController.getUsers(currentAdminId, currentUserRole);
-    if (result.success) {
-      setUsers(result.data);
-      setError(null);
-    } else {
-      setError(result.error);
+  // Función para refrescar todos los datos (manual)
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    console.log('🔄 Refrescando datos manualmente...');
+    
+    try {
+      let adminId = currentAdminId;
+      let userRole = currentUserRole;
+      
+      if (!adminId || userRole === undefined) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          adminId = user.id;
+          userRole = user.rol;
+        }
+      }
+      
+      // Recargar usuarios
+      const usersResult = await UserController.getUsers(adminId, userRole);
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+        console.log('✅ Usuarios refrescados:', usersResult.data.length);
+      }
+      
+      // Recargar permisos y estadísticas si es admin
+      if (userRole === 1 && adminId) {
+        await loadPermissionsAndStats(adminId, userRole);
+      } else if (userRole === 0) {
+        setPermissions({
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAdmins: true,
+          canDeleteAdmins: true,
+          canDeleteSuperAdmin: true,
+          editDailyLimit: 0,
+          currentEditCount: 0,
+          createDailyLimit: 0,
+          currentCreateCount: 0
+        });
+      }
+      
+      // Mostrar mensaje temporal de éxito
+      setTimeout(() => setSuccessMessage(''), 2000);
+      
+    } catch (error) {
+      console.error('Error refrescando:', error);
+      setPermissionError('Error al refrescar los datos');
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+    } finally {
+      setRefreshing(false);
     }
-    setLoading(false);
+  };
+
+  const loadPermissionsAndStats = async (adminId, userRole) => {
+    console.log('Cargando permisos y estadísticas...');
+    
+    try {
+      // Cargar permisos
+      const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
+      if (permissionsResult) {
+        setPermissions({
+          canCreate: permissionsResult.canCreate || false,
+          canEdit: permissionsResult.canEdit || false,
+          canDelete: permissionsResult.canDelete || false,
+          canEditAdmins: permissionsResult.canEditAdmins || false,
+          canDeleteAdmins: permissionsResult.canDeleteAdmins || false,
+          canDeleteSuperAdmin: permissionsResult.canDeleteSuperAdmin || false,
+          editDailyLimit: permissionsResult.editDailyLimit || 0,
+          currentEditCount: permissionsResult.currentEditCount || 0,
+          createDailyLimit: permissionsResult.dailyLimit || 0,
+          currentCreateCount: permissionsResult.currentDailyCount || 0
+        });
+      }
+      
+      // Cargar estadísticas de creación
+      const stats = await UserController.getDailyStats(adminId, userRole);
+      setDailyStats(stats);
+      console.log('📊 Estadísticas de creación:', stats);
+      
+      // Cargar estadísticas de edición
+      const editStatsData = await UserController.getDailyEditStats(adminId, userRole);
+      setEditStats(editStatsData);
+      console.log('📊 Estadísticas de edición:', editStatsData);
+    } catch (error) {
+      console.error('Error cargando permisos/estadísticas:', error);
+    }
+  };
+
+  // Función para refrescar usuarios después de crear/editar/eliminar
+  const refreshUsers = async () => {
+    console.log('🔄 Refrescando usuarios...');
+    try {
+      let adminId = currentAdminId;
+      let userRole = currentUserRole;
+      
+      if (!adminId || userRole === undefined) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          adminId = user.id;
+          userRole = user.rol;
+        }
+      }
+      
+      const result = await UserController.getUsers(adminId, userRole);
+      if (result.success) {
+        setUsers(result.data);
+      }
+    } catch (error) {
+      console.error('Error refrescando usuarios:', error);
+    }
+  };
+
+  // Función para refrescar estadísticas después de crear/editar
+  const refreshStats = async () => {
+    console.log('📊 Refrescando estadísticas...');
+    try {
+      let adminId = currentAdminId;
+      let userRole = currentUserRole;
+      
+      if (!adminId || userRole === undefined) {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          adminId = user.id;
+          userRole = user.rol;
+        }
+      }
+      
+      if (userRole === 1 && adminId) {
+        const stats = await UserController.getDailyStats(adminId, userRole);
+        setDailyStats(stats);
+        
+        const editStatsData = await UserController.getDailyEditStats(adminId, userRole);
+        setEditStats(editStatsData);
+        
+        const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
+        if (permissionsResult) {
+          setPermissions(prev => ({
+            ...prev,
+            currentCreateCount: permissionsResult.currentDailyCount || 0,
+            currentEditCount: permissionsResult.currentEditCount || 0
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error refrescando estadísticas:', error);
+    }
+  };
+
+  const canCreateUser = () => {
+    if (currentUserRole === 0) return true;
+    return permissions.canCreate;
   };
 
   const canEditSpecificUser = (user) => {
     if (currentUserRole === 0) return true;
     if (!permissions.canEdit) return false;
-
-    if (permissions.editDailyLimit > 0 && permissions.currentEditCount >= permissions.editDailyLimit) {
-      showPermissionError(`Límite de ediciones alcanzado. Solo puedes editar ${permissions.editDailyLimit} usuario(s) por día`);
-      return false;
-    }
-
     if (user.rol === 0) return false;
     if (user.rol === 1 && !permissions.canEditAdmins) return false;
     return true;
@@ -120,92 +275,62 @@ export function UserList({ currentAdminId, currentUserRole }) {
   };
 
   const handleDeleteClick = (user) => {
-    if (!canDeleteSpecificUser(user)) {
-      let errorMsg = 'No tienes permiso para eliminar este usuario';
-      if (user.rol === 0) errorMsg = 'No puedes eliminar un Super Administrador';
-      else if (user.rol === 1 && !permissions.canDeleteAdmins) errorMsg = 'No tienes permiso para eliminar otros administradores';
-      showPermissionError(errorMsg);
-      return;
-    }
     setUserToDelete(user);
     setShowConfirmModal(true);
   };
 
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
-    const result = await UserController.deleteUser(userToDelete.id, currentAdminId, currentUserRole);
+    
+    let adminId = currentAdminId;
+    let userRole = currentUserRole;
+    
+    if (!adminId || userRole === undefined) {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        adminId = user.id;
+        userRole = user.rol;
+      }
+    }
+    
+    const result = await UserController.deleteUser(userToDelete.id, adminId, userRole);
     if (result.success) {
       setSuccessMessage('Usuario eliminado exitosamente');
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-      loadUsers();
+      await refreshUsers();
+      await refreshStats();
       setTimeout(() => setShowSuccessModal(false), 2000);
     } else {
-      showPermissionError(result.error);
+      setPermissionError(result.error);
+      setShowPermissionDenied(true);
       setShowConfirmModal(false);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
     }
     setDeleteLoading(false);
     setUserToDelete(null);
   };
 
   const handleEdit = (user) => {
-    if (!canEditSpecificUser(user)) {
-      let errorMsg = 'No tienes permiso para editar este usuario';
-      if (user.rol === 0) errorMsg = 'No puedes editar un Super Administrador';
-      else if (user.rol === 1 && !permissions.canEditAdmins) errorMsg = 'No tienes permiso para editar otros administradores';
-      showPermissionError(errorMsg);
-      return;
-    }
     setSelectedUser(user);
     setIsEditModalOpen(true);
   };
 
   const handleCreateClick = () => {
-    if (currentUserRole === 1 && !permissions.canCreate) {
-      showPermissionError('No tienes permiso para crear usuarios');
-      return;
-    }
     setIsCreateModalOpen(true);
   };
 
-  const showPermissionError = (message) => {
-    setPermissionError(message);
-    setShowPermissionDenied(true);
-    setTimeout(() => setShowPermissionDenied(false), 3000);
+  const handleUserCreated = async () => {
+    console.log('🔄 Usuario creado, actualizando datos...');
+    await refreshUsers();
+    await refreshStats();
   };
 
-  const handleUserCreated = async (userData) => {
-    const result = await UserController.createUser(userData, currentAdminId, currentUserRole);
-    if (result.success) {
-      loadUsers();
-      if (currentUserRole === 1) {
-        const stats = await UserController.getDailyStats(currentAdminId, currentUserRole);
-        setDailyStats(stats);
-      }
-      return true;
-    } else {
-      showPermissionError(result.error);
-      return false;
-    }
-  };
-
-  const handleUserUpdated = async (userId, userData) => {
-    const result = await UserController.updateUser(userId, userData, currentAdminId, currentUserRole);
-    if (result.success) {
-      loadUsers();
-      if (currentUserRole === 1) {
-        const editStatsData = await UserController.getDailyEditStats(currentAdminId, currentUserRole);
-        setEditStats(editStatsData);
-        const userPermissions = await UserController.getUserPermissions(currentAdminId, currentUserRole);
-        if (userPermissions) {
-          setPermissions(prev => ({ ...prev, currentEditCount: userPermissions.currentEditCount || 0 }));
-        }
-      }
-      return true;
-    } else {
-      showPermissionError(result.error);
-      return false;
-    }
+  const handleUserUpdated = async () => {
+    console.log('🔄 Usuario actualizado, actualizando datos...');
+    await refreshUsers();
+    await refreshStats();
   };
 
   const filteredUsers = users.filter(user => {
@@ -228,8 +353,25 @@ export function UserList({ currentAdminId, currentUserRole }) {
   const handleSearch = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
   const handleRoleFilter = (role) => { setRoleFilter(role); setCurrentPage(1); };
 
-  if (loading) return <div className="userlist-loading">Cargando usuarios...</div>;
-  if (error) return <div className="userlist-error">Error: {error}</div>;
+  if (loading) {
+    return (
+      <div className="userlist-loading">
+        <FaSpinner className="spinner" /> Cargando usuarios...
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="userlist-error">
+        <FaExclamationTriangle />
+        <span>Error: {error}</span>
+        <button onClick={() => { setLoading(true); loadAllData(); }} className="retry-btn">
+          Reintentar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="userlist-container">
@@ -238,7 +380,17 @@ export function UserList({ currentAdminId, currentUserRole }) {
       </div>
 
       {showPermissionDenied && (
-        <div className="userlist-permission-denied"><FaShieldAlt /><span>{permissionError}</span></div>
+        <div className="userlist-permission-denied">
+          <FaExclamationTriangle />
+          <span>{permissionError}</span>
+        </div>
+      )}
+
+      {successMessage && !showSuccessModal && (
+        <div className="userlist-success-message">
+          <FaCheckCircle />
+          <span>{successMessage}</span>
+        </div>
       )}
 
       <div className="userlist-search-bar">
@@ -254,87 +406,133 @@ export function UserList({ currentAdminId, currentUserRole }) {
           </select>
         </div>
         <div className="userlist-actions">
+          <button 
+            onClick={handleRefresh} 
+            className="userlist-refresh-btn"
+            disabled={refreshing}
+            title="Actualizar datos"
+          >
+            <FaSync className={refreshing ? 'spinning' : ''} /> {refreshing ? 'Actualizando...' : 'Actualizar'}
+          </button>
           {dailyStats && permissions.canCreate && (
             <div className="daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? '∞' : dailyStats.limit}`}>
               Creados hoy: {dailyStats.used}/{dailyStats.limit === 0 ? '∞' : dailyStats.limit}
             </div>
           )}
-          {editStats && permissions.canEdit && editStats.limit > 0 && (
-            <div className="edit-stats-badge" title={`Editados hoy: ${editStats.used} / ${editStats.limit}`}>
-              Editados hoy: {editStats.used}/{editStats.limit}
-            </div>
+          {(permissions.canCreate || currentUserRole === 0) && (
+            <button onClick={handleCreateClick} className="userlist-create-btn">
+              + Crear Usuario
+            </button>
           )}
-          {permissions.canCreate && <button onClick={handleCreateClick} className="userlist-create-btn">Crear Usuario</button>}
         </div>
       </div>
 
       <div className="userlist-table-wrapper">
         <table className="userlist-table">
-          <thead><tr><th>ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Edad</th><th>Rol</th><th>Acciones</th></tr></thead>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Teléfono</th>
+              <th>Edad</th>
+              <th>Rol</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
           <tbody>
-            {currentUsers.map((user, index) => (
-              <tr key={user.id}>
-                <td>{indexOfFirstUser + index + 1}</td>
-                <td>{user.name}</td>
-                <td><a href={`mailto:${user.email}`} className="userlist-email">{user.email}</a></td>
-                <td>{user.phone || '—'}</td>
-                <td>{user.age ? `${user.age} años` : '—'}</td>
-                <td><span className={`user-role-badge ${user.rol === 1 ? 'role-admin' : user.rol === 0 ? 'role-superadmin' : 'role-user'}`}>{user.rol === 0 ? 'Super Admin' : user.rol === 1 ? 'Administrador' : 'Usuario'}</span></td>
-                <td className="actions-cell">
-                  <button 
-                    onClick={() => permissions.canEdit ? handleEdit(user) : null} 
-                    className={`userlist-edit-btn ${!permissions.canEdit ? 'disabled-btn' : ''}`}
-                    disabled={!permissions.canEdit || (user.rol === 0 && currentUserRole !== 0)}
-                    style={{ opacity: !permissions.canEdit ? 0.5 : 1, cursor: !permissions.canEdit ? 'not-allowed' : 'pointer' }}
-                  >
-                    Editar
-                  </button>
-                  <button 
-                    onClick={() => permissions.canDelete ? handleDeleteClick(user) : null} 
-                    className={`userlist-delete-btn ${!permissions.canDelete ? 'disabled-btn' : ''}`}
-                    disabled={!permissions.canDelete || (user.rol === 0 && !permissions.canDeleteSuperAdmin)}
-                    style={{ opacity: !permissions.canDelete ? 0.5 : 1, cursor: !permissions.canDelete ? 'not-allowed' : 'pointer' }}
-                  >
-                    Eliminar
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {currentUsers.map((user, index) => {
+              const canEdit = canEditSpecificUser(user);
+              const canDelete = canDeleteSpecificUser(user);
+              
+              return (
+                <tr key={user.id}>
+                  <td>{indexOfFirstUser + index + 1}</td>
+                  <td>{user.name}</td>
+                  <td><a href={`mailto:${user.email}`} className="userlist-email">{user.email}</a></td>
+                  <td>{user.phone || '—'}</td>
+                  <td>{user.age ? `${user.age} años` : '—'}</td>
+                  <td>
+                    <span className={`user-role-badge ${user.rol === 1 ? 'role-admin' : user.rol === 0 ? 'role-superadmin' : 'role-user'}`}>
+                      {user.rol === 0 ? 'Super Admin' : user.rol === 1 ? 'Administrador' : 'Usuario'}
+                    </span>
+                  </td>
+                  <td className="actions-cell">
+                    <button 
+                      onClick={() => handleEdit(user)} 
+                      className={`userlist-edit-btn ${!canEdit ? 'disabled-btn' : ''}`}
+                      disabled={!canEdit}
+                    >
+                      Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(user)} 
+                      className={`userlist-delete-btn ${!canDelete ? 'disabled-btn' : ''}`}
+                      disabled={!canDelete}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {filteredUsers.length === 0 && <div className="userlist-empty"><p>No se encontraron usuarios</p></div>}
-
-      {filteredUsers.length > usersPerPage && (
-        <>
-          <div className="userlist-pagination">
-            <div className="pagination-info">Mostrando {indexOfFirstUser + 1} - {Math.min(indexOfLastUser, filteredUsers.length)} de {filteredUsers.length} usuarios</div>
-            <div className="pagination-controls">
-              <button onClick={prevPage} disabled={currentPage === 1} className="pagination-btn">Anterior</button>
-              <span className="pagination-current">Página {currentPage} de {totalPages}</span>
-              <button onClick={nextPage} disabled={currentPage === totalPages} className="pagination-btn">Siguiente</button>
-            </div>
-          </div>
-          <div className="userlist-pagination-mobile">
-            <button onClick={prevPage} disabled={currentPage === 1} className="pagination-btn-mobile">◀ Anterior</button>
-            <span className="pagination-current-mobile">Pág. {currentPage} / {totalPages}</span>
-            <button onClick={nextPage} disabled={currentPage === totalPages} className="pagination-btn-mobile">Siguiente ▶</button>
-          </div>
-        </>
+      {filteredUsers.length === 0 && (
+        <div className="userlist-empty">
+          <p>No se encontraron usuarios</p>
+        </div>
       )}
 
-      <CreateUserModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onUserCreated={handleUserCreated} currentUserRole={currentUserRole} currentAdminId={currentAdminId}/>
-      <EditUserModal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setSelectedUser(null); }} onUserUpdated={handleUserUpdated} user={selectedUser} currentUserRole={currentUserRole} />
+      {filteredUsers.length > usersPerPage && (
+        <div className="userlist-pagination">
+          <div className="pagination-info">
+            Mostrando {indexOfFirstUser + 1} - {Math.min(indexOfLastUser, filteredUsers.length)} de {filteredUsers.length} usuarios
+          </div>
+          <div className="pagination-controls">
+            <button onClick={prevPage} disabled={currentPage === 1} className="pagination-btn">Anterior</button>
+            <span className="pagination-current">Página {currentPage} de {totalPages}</span>
+            <button onClick={nextPage} disabled={currentPage === totalPages} className="pagination-btn">Siguiente</button>
+          </div>
+        </div>
+      )}
+
+      <CreateUserModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onUserCreated={handleUserCreated} 
+        currentUserRole={currentUserRole} 
+        currentAdminId={currentAdminId}
+      />
+      
+      <EditUserModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => { 
+          setIsEditModalOpen(false); 
+          setSelectedUser(null); 
+        }} 
+        onUserUpdated={handleUserUpdated} 
+        user={selectedUser} 
+        currentUserRole={currentUserRole}
+        currentAdminId={currentAdminId}
+      />
 
       {showConfirmModal && (
         <div className="userlist-modal-overlay" onClick={() => setShowConfirmModal(false)}>
           <div className="userlist-modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="userlist-modal-header"><h3>Confirmar Eliminación</h3></div>
-            <div className="userlist-modal-body"><p>¿Estás seguro de que deseas eliminar este usuario?</p><p className="userlist-modal-item"><strong>{userToDelete?.name}</strong></p><p className="userlist-modal-warning">Esta acción no se puede deshacer.</p></div>
+            <div className="userlist-modal-body">
+              <p>¿Estás seguro de que deseas eliminar este usuario?</p>
+              <p className="userlist-modal-item"><strong>{userToDelete?.name}</strong></p>
+              <p className="userlist-modal-warning">⚠️ Esta acción no se puede deshacer.</p>
+            </div>
             <div className="userlist-modal-footer">
               <button className="userlist-modal-cancel" onClick={() => setShowConfirmModal(false)}>Cancelar</button>
-              <button className="userlist-modal-confirm" onClick={handleDeleteConfirm} disabled={deleteLoading}>{deleteLoading ? <><FaSpinner className="userlist-spinner" /> Eliminando...</> : 'Eliminar'}</button>
+              <button className="userlist-modal-confirm" onClick={handleDeleteConfirm} disabled={deleteLoading}>
+                {deleteLoading ? <><FaSpinner className="userlist-spinner" /> Eliminando...</> : 'Eliminar'}
+              </button>
             </div>
           </div>
         </div>
@@ -342,7 +540,11 @@ export function UserList({ currentAdminId, currentUserRole }) {
 
       {showSuccessModal && (
         <div className="userlist-success-overlay">
-          <div className="userlist-success-container"><div className="userlist-success-icon"><FaCheckCircle /></div><h3>¡Éxito!</h3><p>{successMessage}</p></div>
+          <div className="userlist-success-container">
+            <div className="userlist-success-icon"><FaCheckCircle /></div>
+            <h3>¡Éxito!</h3>
+            <p>{successMessage}</p>
+          </div>
         </div>
       )}
     </div>

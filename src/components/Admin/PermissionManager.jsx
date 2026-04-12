@@ -14,71 +14,104 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   
-  // Estado para el modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState(null);
 
-    useEffect(() => {
-        loadAdmins();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  useEffect(() => {
+    loadAdmins();
+  }, []);
 
-    useEffect(() => {
-        filterAdmins();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchTerm, admins]);
+  useEffect(() => {
+    filterAdmins();
+  }, [searchTerm, admins]);
+
+  // Función para convertir cualquier valor a booleano
+  const toBoolean = (value) => {
+    if (value === true || value === false) return value;
+    if (value === 1 || value === 0) return value === 1;
+    if (typeof value === 'string') {
+      return value.toLowerCase() === 'true' || value === '1';
+    }
+    return false;
+  };
 
   const loadAdmins = async () => {
+    console.log('🚀 Iniciando carga de administradores...');
     setLoading(true);
     setError(null);
     
     try {
-      // Obtener todos los usuarios
       const result = await UserController.getUsers(currentUserId, currentUserRole);
+      console.log('📦 Resultado de getUsers:', result);
       
       if (result.success) {
-        // Filtrar solo administradores (rol === 1)
         const adminUsers = result.data.filter(user => parseInt(user.rol) === 1);
+        console.log(`👥 Total de administradores encontrados: ${adminUsers.length}`);
         
-        // Cargar permisos para cada admin desde la base de datos
         const adminsWithPermissions = await Promise.all(
           adminUsers.map(async (admin) => {
+            console.log(`\n📌 Procesando admin: ${admin.name} (ID: ${admin.id})`);
+            
+            // Obtener permisos - El controlador ahora maneja correctamente el rol 0
             const permissions = await UserController.getUserPermissions(admin.id, currentUserRole);
+            console.log(`🔐 Permisos recibidos para ${admin.name}:`, permissions);
+            
+            // Si por alguna razón vienen null, usar valores por defecto
+            if (!permissions) {
+              console.log(`⚠️ No se encontraron permisos para ${admin.name}, usando valores por defecto`);
+              const normalizedPermissions = {
+                createUsers: { enabled: false, dailyLimit: 0 },
+                editUsers: { enabled: false, dailyLimit: 0, canEditAdmins: false },
+                deleteUsers: { enabled: false, canDeleteAdmins: false, canDeleteSuperAdmin: false }
+              };
+              
+              return {
+                ...admin,
+                permissions: normalizedPermissions
+              };
+            }
+            
+            // Normalizar los permisos
+            const normalizedPermissions = {
+              createUsers: { 
+                enabled: toBoolean(permissions.canCreate), 
+                dailyLimit: permissions.dailyLimit || 0,
+              },
+              editUsers: { 
+                enabled: toBoolean(permissions.canEdit), 
+                dailyLimit: permissions.editDailyLimit || 0,
+                canEditAdmins: toBoolean(permissions.canEditAdmins)
+              },
+              deleteUsers: { 
+                enabled: toBoolean(permissions.canDelete),
+                canDeleteAdmins: toBoolean(permissions.canDeleteAdmins),
+                canDeleteSuperAdmin: toBoolean(permissions.canDeleteSuperAdmin)
+              }
+            };
+            
+            console.log(`✅ Permisos normalizados para ${admin.name}:`, normalizedPermissions);
+            
             return {
               ...admin,
-              permissions: {
-                createUsers: { 
-                  enabled: permissions?.canCreate || false, 
-                  dailyLimit: permissions?.dailyLimit || 0,
-                  currentCount: permissions?.currentDailyCount || 0
-                },
-                editUsers: { 
-                  enabled: permissions?.canEdit || false, 
-                  dailyLimit: permissions?.editDailyLimit || 0,
-                  currentCount: permissions?.currentEditCount || 0,
-                  canEditAdmins: permissions?.canEditAdmins || false
-                },
-                deleteUsers: { 
-                  enabled: permissions?.canDelete || false,
-                  canDeleteAdmins: permissions?.canDeleteAdmins || false,
-                  canDeleteSuperAdmin: permissions?.canDeleteSuperAdmin || false
-                }
-              }
+              permissions: normalizedPermissions
             };
           })
         );
         
+        console.log('\n🎯 Todos los admins procesados:', adminsWithPermissions);
         setAdmins(adminsWithPermissions);
         setFilteredAdmins(adminsWithPermissions);
       } else {
+        console.error('❌ Error en getUsers:', result.error);
         setError(result.error);
       }
     } catch (error) {
-      console.error('Error al cargar administradores:', error);
+      console.error('❌ Error al cargar administradores:', error);
       setError('Error al cargar la lista de administradores');
     } finally {
       setLoading(false);
+      console.log('🏁 Carga finalizada');
     }
   };
 
@@ -117,81 +150,24 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
     if (!selectedAdmin) return;
     
     try {
-      // Guardar en la base de datos a través del controlador
       const result = await UserController.updateAdminPermissions(
         selectedAdmin.id,
         {
-          canCreateUsers: newPermissions.createUsers.enabled,
-          createDailyLimit: newPermissions.createUsers.dailyLimit,
-          canEditUsers: newPermissions.editUsers.enabled,
-          editDailyLimit: newPermissions.editUsers.dailyLimit,
-          canEditAdmins: newPermissions.editUsers.canEditAdmins,
-          canDeleteUsers: newPermissions.deleteUsers.enabled,
-          canDeleteAdmins: newPermissions.deleteUsers.canDeleteAdmins,
-          canDeleteSuperAdmin: newPermissions.deleteUsers.canDeleteSuperAdmin
+          canCreateUsers: Boolean(newPermissions.createUsers.enabled),
+          createDailyLimit: newPermissions.createUsers.dailyLimit || 0,
+          canEditUsers: Boolean(newPermissions.editUsers.enabled),
+          editDailyLimit: newPermissions.editUsers.dailyLimit || 0,
+          canEditAdmins: Boolean(newPermissions.editUsers.canEditAdmins),
+          canDeleteUsers: Boolean(newPermissions.deleteUsers.enabled),
+          canDeleteAdmins: Boolean(newPermissions.deleteUsers.canDeleteAdmins),
+          canDeleteSuperAdmin: Boolean(newPermissions.deleteUsers.canDeleteSuperAdmin)
         },
         currentUserRole
       );
       
       if (result.success) {
         setMessage(`✅ Permisos de ${selectedAdmin.name} guardados exitosamente`);
-        
-        // Actualizar la lista localmente
-        const updatedAdmins = admins.map(admin => 
-          admin.id === selectedAdmin.id 
-            ? { 
-                ...admin, 
-                permissions: {
-                  createUsers: { 
-                    enabled: newPermissions.createUsers.enabled, 
-                    dailyLimit: newPermissions.createUsers.dailyLimit,
-                    currentCount: admin.permissions.createUsers.currentCount
-                  },
-                  editUsers: { 
-                    enabled: newPermissions.editUsers.enabled, 
-                    dailyLimit: newPermissions.editUsers.dailyLimit,
-                    currentCount: admin.permissions.editUsers.currentCount,
-                    canEditAdmins: newPermissions.editUsers.canEditAdmins
-                  },
-                  deleteUsers: { 
-                    enabled: newPermissions.deleteUsers.enabled,
-                    canDeleteAdmins: newPermissions.deleteUsers.canDeleteAdmins,
-                    canDeleteSuperAdmin: newPermissions.deleteUsers.canDeleteSuperAdmin
-                  }
-                }
-              }
-            : admin
-        );
-        
-        setAdmins(updatedAdmins);
-        setFilteredAdmins(prev => 
-          prev.map(admin => 
-            admin.id === selectedAdmin.id 
-              ? { 
-                  ...admin, 
-                  permissions: {
-                    createUsers: { 
-                      enabled: newPermissions.createUsers.enabled, 
-                      dailyLimit: newPermissions.createUsers.dailyLimit,
-                      currentCount: admin.permissions.createUsers.currentCount
-                    },
-                    editUsers: { 
-                      enabled: newPermissions.editUsers.enabled, 
-                      dailyLimit: newPermissions.editUsers.dailyLimit,
-                      currentCount: admin.permissions.editUsers.currentCount,
-                      canEditAdmins: newPermissions.editUsers.canEditAdmins
-                    },
-                    deleteUsers: { 
-                      enabled: newPermissions.deleteUsers.enabled,
-                      canDeleteAdmins: newPermissions.deleteUsers.canDeleteAdmins,
-                      canDeleteSuperAdmin: newPermissions.deleteUsers.canDeleteSuperAdmin
-                    }
-                  }
-                }
-              : admin
-          )
-        );
-        
+        await loadAdmins();
         setIsEditModalOpen(false);
         setSelectedAdmin(null);
         setSelectedPermissions(null);
@@ -207,7 +183,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
     }
   };
 
-  // Paginación
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentAdmins = filteredAdmins.slice(indexOfFirstItem, indexOfLastItem);
@@ -253,7 +228,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
 
   return (
     <div className="permission-manager">
-      {/* Título */}
       <div className="permission-header">
         <h2 className="permission-title">
           <FaUserShield className="permission-title-icon" />
@@ -263,10 +237,8 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
       
       {message && <div className="permission-message success">{message}</div>}
       
-      {/* Barra de búsqueda */}
       <div className="permission-search-bar">
         <div className="search-wrapper">
-          <FaSearch className="search-icon" />
           <input
             type="text"
             placeholder="Buscar administrador por nombre o email..."
@@ -310,7 +282,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                       <span className="permission-enabled">
                         <FaCheck /> Sí
                         {admin.permissions.createUsers.dailyLimit > 0 && (
-                          <small>({admin.permissions.createUsers.dailyLimit}/día)</small>
+                          <small>({admin.permissions.createUsers.dailyLimit} por día)</small>
                         )}
                         {admin.permissions.createUsers.dailyLimit === 0 && (
                           <small>(sin límite)</small>
@@ -331,7 +303,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                       <span className="permission-enabled">
                         <FaCheck /> Sí
                         {admin.permissions.editUsers.dailyLimit > 0 && (
-                          <small>({admin.permissions.editUsers.dailyLimit}/día)</small>
+                          <small>({admin.permissions.editUsers.dailyLimit} por día)</small>
                         )}
                         {admin.permissions.editUsers.canEditAdmins && (
                           <small>(incluye admins)</small>
@@ -391,7 +363,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         )}
       </div>
 
-      {/* Información de paginación */}
       {filteredAdmins.length > 0 && (
         <div className="permission-pagination-info">
           <span>
@@ -400,7 +371,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         </div>
       )}
 
-      {/* Controles de paginación */}
       {filteredAdmins.length > itemsPerPage && (
         <div className="permission-pagination">
           <button 
@@ -423,7 +393,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         </div>
       )}
 
-      {/* Modal de edición de permisos */}
       <EditPermissionsModal
         isOpen={isEditModalOpen}
         onClose={() => {
@@ -434,6 +403,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         onSave={handleSavePermissions}
         admin={selectedAdmin}
         permissions={selectedPermissions}
+        currentUserRole={currentUserRole}
       />
     </div>
   );

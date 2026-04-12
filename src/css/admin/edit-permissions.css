@@ -272,6 +272,274 @@
   gap: 5px;
 }
 
+/* Grupo de input con botón */
+.edit-limit-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 5px;
+}
+
+.edit-limit-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.edit-limit-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.edit-unlimited-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #667eea;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.edit-unlimited-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.edit-unlimited-btn:active {
+  transform: translateY(0);
+}
+
+.edit-unlimited-btn svg {
+  font-size: 16px;
+}
+
+/* Mejorar el estilo de los mensajes de límite */
+.edit-permission-limit small {
+  display: block;
+  margin-top: 8px;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.edit-permission-limit small:first-of-type {
+  margin-top: 5px;
+}
+
+/* Estilo para cuando el límite es 0 (infinito) */
+.edit-limit-input[value="0"] {
+  background-color: #f0f9ff;
+  border-color: #4a90e2;
+}
+
+/* Sección de reinicio de contadores */
+.reset-counters-group {
+  border: 1px solid #ffc107;
+  background: #fff9e6;
+}
+
+.reset-counters-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #ffc107;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.reset-counters-btn:hover {
+  background: #e0a800;
+  transform: translateY(-1px);
+}
+
+.reset-help-text {
+  display: block;
+  margin-top: 8px;
+  color: #856404;
+  font-size: 12px;
+}
+
+.reset-message {
+  margin-top: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.reset-message.success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.reset-message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.reset-success-animation {
+  margin-top: 10px;
+  padding: 8px;
+  background: #28a745;
+  color: white;
+  border-radius: 4px;
+  text-align: center;
+  animation: fadeInOut 2s ease;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}
+
+/* Modal de confirmación para reinicio */
+.reset-confirm-overlay {
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1001;
+}
+
+.reset-confirm-container {
+  background: white;
+  border-radius: 12px;
+  width: 450px;
+  max-width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.reset-confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  background: #ffc107;
+  color: #333;
+}
+
+.reset-confirm-header .warning-icon {
+  font-size: 24px;
+}
+
+.reset-confirm-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.reset-confirm-body {
+  padding: 20px;
+}
+
+.reset-confirm-body p {
+  margin: 0 0 15px 0;
+  line-height: 1.5;
+}
+
+.reset-confirm-body ul {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.reset-confirm-body li {
+  margin: 5px 0;
+  color: #666;
+}
+
+.reset-confirm-body .warning-text {
+  color: #856404;
+  background: #fff3cd;
+  padding: 10px;
+  border-radius: 6px;
+  margin-top: 15px;
+  font-size: 13px;
+}
+
+.reset-confirm-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+}
+
+.reset-confirm-cancel {
+  padding: 8px 20px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.reset-confirm-cancel:hover {
+  background: #5a6268;
+}
+
+.reset-confirm-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: #ffc107;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.reset-confirm-btn:hover {
+  background: #e0a800;
+}
+
+.reset-confirm-btn .spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.edit-permissions-divider {
+  height: 1px;
+  background: #e0e0e0;
+  margin: 20px 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .edit-limit-input-group {
+    flex-direction: column;
+  }
+  
+  .edit-unlimited-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Modal Animations */
 @keyframes fadeIn {
   from {

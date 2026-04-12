@@ -64,9 +64,7 @@ const HomeAdmin = () => {
       const defaultPermissions = {
         createUsers: { enabled: false, dailyLimit: 0, currentCount: 0, lastReset: new Date().toDateString() },
         editUsers: { enabled: false, canEditAdmins: false },
-        deleteUsers: { enabled: false, canDeleteAdmins: false },
-        viewReports: { enabled: false },
-        manageOrders: { enabled: false }
+        deleteUsers: { enabled: false, canDeleteAdmins: false }
       };
       setAdminPermissions(defaultPermissions);
     }
@@ -118,16 +116,14 @@ const HomeAdmin = () => {
     }
   };
 
-  // Verificar si el admin puede ver pedidos
+  // Verificar si el admin puede ver pedidos (siempre true para admin y super admin)
   const canViewOrders = () => {
-    if (userData?.rol === 0) return true;
-    return adminPermissions?.manageOrders?.enabled || false;
+    return userData?.rol === 0 || userData?.rol === 1;
   };
 
-  // Verificar si el admin puede ver configuraciones
+  // Verificar si el admin puede ver configuraciones (siempre true para admin y super admin)
   const canViewSettings = () => {
-    if (userData?.rol === 0) return true;
-    return adminPermissions?.viewReports?.enabled || false;
+    return userData?.rol === 0 || userData?.rol === 1;
   };
 
   const renderContent = () => {
@@ -272,11 +268,9 @@ const HomeAdmin = () => {
                 <div className="admin-permissions-info">
                   <h4>Tus permisos actuales:</h4>
                   <ul>
-                    <li>Crear usuarios: {adminPermissions.createUsers?.enabled ? `Sí (${adminPermissions.createUsers.dailyLimit === 0 ? 'sin límite' : adminPermissions.createUsers.dailyLimit + '/día'})` : 'No'}</li>
-                    <li>Editar usuarios: {adminPermissions.editUsers?.enabled ? 'Sí' : 'No'}</li>
-                    <li>Eliminar usuarios: {adminPermissions.deleteUsers?.enabled ? 'Sí' : 'No'}</li>
-                    <li>Ver reportes: {adminPermissions.viewReports?.enabled ? 'Sí' : 'No'}</li>
-                    <li>Gestionar pedidos: {adminPermissions.manageOrders?.enabled ? 'Sí' : 'No'}</li>
+                    <li>✏️ Crear usuarios: {adminPermissions.createUsers?.enabled ? `Sí (${adminPermissions.createUsers.dailyLimit === 0 ? 'sin límite' : adminPermissions.createUsers.dailyLimit + ' por día'})` : 'No'}</li>
+                    <li>📝 Editar usuarios: {adminPermissions.editUsers?.enabled ? 'Sí' : 'No'}</li>
+                    <li>🗑️ Eliminar usuarios: {adminPermissions.deleteUsers?.enabled ? 'Sí' : 'No'}</li>
                   </ul>
                 </div>
               )}
@@ -359,7 +353,7 @@ const HomeAdmin = () => {
             </button>
           )}
 
-          {/* Mostrar pedidos solo si tiene permiso */}
+          {/* Mostrar pedidos - visible para admin y super admin */}
           {canViewOrders() && (
             <button 
               className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
@@ -370,7 +364,7 @@ const HomeAdmin = () => {
             </button>
           )}
 
-          {/* Mostrar configuración solo si tiene permiso */}
+          {/* Mostrar configuración - visible para admin y super admin */}
           {canViewSettings() && (
             <button 
               className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
@@ -403,7 +397,7 @@ const HomeAdmin = () => {
               {userData?.rol === 1 && adminPermissions?.createUsers?.enabled && (
                 <div className="admin-daily-stats">
                   <span className="stats-badge">
-                    Creados hoy: {adminPermissions.createUsers.currentCount}/{adminPermissions.createUsers.dailyLimit === 0 ? '∞' : adminPermissions.createUsers.dailyLimit}
+                    📊 Creados hoy: {adminPermissions.createUsers.currentCount}/{adminPermissions.createUsers.dailyLimit === 0 ? '∞' : adminPermissions.createUsers.dailyLimit}
                   </span>
                 </div>
               )}
