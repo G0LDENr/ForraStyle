@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserController } from '../../controllers/UserController';
 import { CreateUserModal } from './Create-User';
 import { EditUserModal } from './Edit-User';
@@ -42,126 +42,24 @@ export function UserList({ currentAdminId, currentUserRole }) {
   
   const initialLoadDone = React.useRef(false);
 
-  // Cargar datos SOLO UNA VEZ cuando el componente se monta
-  useEffect(() => {
-    if (!initialLoadDone.current) {
-      initialLoadDone.current = true;
-      loadAllData();
-    }
-  }, []);
-
-  const loadAllData = async () => {
-    setLoading(true);
-    console.log('🚀 Cargando datos...');
+  // Función para obtener adminId y userRole de manera consistente
+  const getAdminIdAndRole = useCallback(() => {
+    let adminId = currentAdminId;
+    let userRole = currentUserRole;
     
-    try {
-      // Obtener el adminId del localStorage si no viene por props
-      let adminId = currentAdminId;
-      let userRole = currentUserRole;
-      
-      if (!adminId || userRole === undefined) {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          adminId = user.id;
-          userRole = user.rol;
-          console.log('📌 Datos obtenidos del localStorage:', { adminId, userRole });
-        }
+    if (!adminId || userRole === undefined) {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        adminId = user.id;
+        userRole = user.rol;
       }
-      
-      // Cargar usuarios
-      const usersResult = await UserController.getUsers(adminId, userRole);
-      if (usersResult.success) {
-        setUsers(usersResult.data);
-        console.log('✅ Usuarios cargados:', usersResult.data.length);
-      } else {
-        setError(usersResult.error);
-      }
-      
-      // Cargar permisos si es admin
-      if (userRole === 1 && adminId) {
-        await loadPermissionsAndStats(adminId, userRole);
-      } else if (userRole === 0) {
-        setPermissions({
-          canCreate: true,
-          canEdit: true,
-          canDelete: true,
-          canEditAdmins: true,
-          canDeleteAdmins: true,
-          canDeleteSuperAdmin: true,
-          editDailyLimit: 0,
-          currentEditCount: 0,
-          createDailyLimit: 0,
-          currentCreateCount: 0
-        });
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      setError('Error al cargar los datos');
-    } finally {
-      setLoading(false);
-      console.log('🏁 Carga finalizada');
     }
-  };
-
-  // Función para refrescar todos los datos (manual)
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    console.log('🔄 Refrescando datos manualmente...');
     
-    try {
-      let adminId = currentAdminId;
-      let userRole = currentUserRole;
-      
-      if (!adminId || userRole === undefined) {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          adminId = user.id;
-          userRole = user.rol;
-        }
-      }
-      
-      // Recargar usuarios
-      const usersResult = await UserController.getUsers(adminId, userRole);
-      if (usersResult.success) {
-        setUsers(usersResult.data);
-        console.log('✅ Usuarios refrescados:', usersResult.data.length);
-      }
-      
-      // Recargar permisos y estadísticas si es admin
-      if (userRole === 1 && adminId) {
-        await loadPermissionsAndStats(adminId, userRole);
-      } else if (userRole === 0) {
-        setPermissions({
-          canCreate: true,
-          canEdit: true,
-          canDelete: true,
-          canEditAdmins: true,
-          canDeleteAdmins: true,
-          canDeleteSuperAdmin: true,
-          editDailyLimit: 0,
-          currentEditCount: 0,
-          createDailyLimit: 0,
-          currentCreateCount: 0
-        });
-      }
-      
-      // Mostrar mensaje temporal de éxito
-      setSuccessMessage('Datos actualizados correctamente');
-      setTimeout(() => setSuccessMessage(''), 2000);
-      
-    } catch (error) {
-      console.error('Error refrescando:', error);
-      setPermissionError('Error al refrescar los datos');
-      setShowPermissionDenied(true);
-      setTimeout(() => setShowPermissionDenied(false), 3000);
-    } finally {
-      setRefreshing(false);
-    }
-  };
+    return { adminId, userRole };
+  }, [currentAdminId, currentUserRole]);
 
-  const loadPermissionsAndStats = async (adminId, userRole) => {
+  const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
     console.log('🔐 Cargando permisos y estadísticas...');
     
     try {
@@ -194,24 +92,110 @@ export function UserList({ currentAdminId, currentUserRole }) {
     } catch (error) {
       console.error('Error cargando permisos/estadísticas:', error);
     }
-  };
+  }, []);
 
-  // Función para refrescar usuarios después de crear/editar/eliminar
-  const refreshUsers = async () => {
-    console.log('🔄 Refrescando usuarios...');
+  const loadAllData = useCallback(async () => {
+    setLoading(true);
+    console.log('🚀 Cargando datos...');
+    
     try {
-      let adminId = currentAdminId;
-      let userRole = currentUserRole;
+      const { adminId, userRole } = getAdminIdAndRole();
       
-      if (!adminId || userRole === undefined) {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          adminId = user.id;
-          userRole = user.rol;
-        }
+      // Cargar usuarios
+      const usersResult = await UserController.getUsers(adminId, userRole);
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+        console.log('✅ Usuarios cargados:', usersResult.data.length);
+      } else {
+        setError(usersResult.error);
       }
       
+      // Cargar permisos según el rol
+      if (userRole === 1 && adminId) {
+        await loadPermissionsAndStats(adminId, userRole);
+      } else if (userRole === 0) {
+        setPermissions({
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAdmins: true,
+          canDeleteAdmins: true,
+          canDeleteSuperAdmin: true,
+          editDailyLimit: 0,
+          currentEditCount: 0,
+          createDailyLimit: 0,
+          currentCreateCount: 0
+        });
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+      console.log('🏁 Carga finalizada');
+    }
+  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+
+  // Cargar datos SOLO UNA VEZ cuando el componente se monta
+  useEffect(() => {
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadAllData();
+    }
+  }, [loadAllData]);
+
+  // Función para refrescar todos los datos (manual)
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    console.log('🔄 Refrescando datos manualmente...');
+    
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      
+      // Recargar usuarios
+      const usersResult = await UserController.getUsers(adminId, userRole);
+      if (usersResult.success) {
+        setUsers(usersResult.data);
+        console.log('✅ Usuarios refrescados:', usersResult.data.length);
+      }
+      
+      // Recargar permisos y estadísticas según el rol
+      if (userRole === 1 && adminId) {
+        await loadPermissionsAndStats(adminId, userRole);
+      } else if (userRole === 0) {
+        setPermissions({
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAdmins: true,
+          canDeleteAdmins: true,
+          canDeleteSuperAdmin: true,
+          editDailyLimit: 0,
+          currentEditCount: 0,
+          createDailyLimit: 0,
+          currentCreateCount: 0
+        });
+      }
+      
+      // Mostrar mensaje temporal de éxito
+      setSuccessMessage('Datos actualizados correctamente');
+      setTimeout(() => setSuccessMessage(''), 2000);
+      
+    } catch (error) {
+      console.error('Error refrescando:', error);
+      setPermissionError('Error al refrescar los datos');
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+
+  // Función para refrescar usuarios después de crear/editar/eliminar
+  const refreshUsers = useCallback(async () => {
+    console.log('🔄 Refrescando usuarios...');
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
       const result = await UserController.getUsers(adminId, userRole);
       if (result.success) {
         setUsers(result.data);
@@ -219,23 +203,13 @@ export function UserList({ currentAdminId, currentUserRole }) {
     } catch (error) {
       console.error('Error refrescando usuarios:', error);
     }
-  };
+  }, [getAdminIdAndRole]);
 
   // Función para refrescar estadísticas después de crear/editar
-  const refreshStats = async () => {
+  const refreshStats = useCallback(async () => {
     console.log('📊 Refrescando estadísticas...');
     try {
-      let adminId = currentAdminId;
-      let userRole = currentUserRole;
-      
-      if (!adminId || userRole === undefined) {
-        const userData = localStorage.getItem('user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          adminId = user.id;
-          userRole = user.rol;
-        }
-      }
+      const { adminId, userRole } = getAdminIdAndRole();
       
       if (userRole === 1 && adminId) {
         const stats = await UserController.getDailyStats(adminId, userRole);
@@ -256,28 +230,23 @@ export function UserList({ currentAdminId, currentUserRole }) {
     } catch (error) {
       console.error('Error refrescando estadísticas:', error);
     }
-  };
+  }, [getAdminIdAndRole]);
 
-  const canCreateUser = () => {
-    if (currentUserRole === 0) return true;
-    return permissions.canCreate;
-  };
-
-  const canEditSpecificUser = (user) => {
+  const canEditSpecificUser = useCallback((user) => {
     if (currentUserRole === 0) return true;
     if (!permissions.canEdit) return false;
     if (user.rol === 0) return false;
     if (user.rol === 1 && !permissions.canEditAdmins) return false;
     return true;
-  };
+  }, [currentUserRole, permissions.canEdit, permissions.canEditAdmins]);
 
-  const canDeleteSpecificUser = (user) => {
+  const canDeleteSpecificUser = useCallback((user) => {
     if (currentUserRole === 0) return true;
     if (!permissions.canDelete) return false;
     if (user.rol === 0) return permissions.canDeleteSuperAdmin;
     if (user.rol === 1 && !permissions.canDeleteAdmins) return false;
     return true;
-  };
+  }, [currentUserRole, permissions.canDelete, permissions.canDeleteSuperAdmin, permissions.canDeleteAdmins]);
 
   const handleDeleteClick = (user) => {
     setUserToDelete(user);
@@ -287,17 +256,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
     
-    let adminId = currentAdminId;
-    let userRole = currentUserRole;
-    
-    if (!adminId || userRole === undefined) {
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        adminId = user.id;
-        userRole = user.rol;
-      }
-    }
+    const { adminId, userRole } = getAdminIdAndRole();
     
     const result = await UserController.deleteUser(userToDelete.id, adminId, userRole);
     if (result.success) {
@@ -429,7 +388,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
               ✏️ Editados hoy: {editStats.used}/{editStats.limit}
             </div>
           )}
-          {(permissions.canCreate || currentUserRole === 0) && (
+          {permissions.canCreate && (
             <button onClick={handleCreateClick} className="userlist-create-btn">
               + Crear Usuario
             </button>
