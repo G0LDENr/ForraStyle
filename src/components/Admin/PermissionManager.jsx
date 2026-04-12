@@ -19,13 +19,15 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState(null);
 
-  useEffect(() => {
-    loadAdmins();
-  }, []);
+    useEffect(() => {
+        loadAdmins();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-  useEffect(() => {
-    filterAdmins();
-  }, [searchTerm, admins]);
+    useEffect(() => {
+        filterAdmins();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm, admins]);
 
   const loadAdmins = async () => {
     setLoading(true);

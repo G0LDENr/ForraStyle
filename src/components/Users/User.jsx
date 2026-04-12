@@ -39,10 +39,12 @@ export function UserList({ currentAdminId, currentUserRole }) {
 
   useEffect(() => {
     loadUserPermissions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentAdminId, currentUserRole]);
 
   useEffect(() => {
     loadUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadUserPermissions = async () => {
