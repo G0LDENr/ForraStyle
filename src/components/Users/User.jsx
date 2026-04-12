@@ -39,11 +39,15 @@ export function UserList({ currentAdminId, currentUserRole }) {
   const [successMessage, setSuccessMessage] = useState('');
   const [showPermissionDenied, setShowPermissionDenied] = useState(false);
   const [permissionError, setPermissionError] = useState('');
+  
+  const initialLoadDone = React.useRef(false);
 
   // Cargar datos SOLO UNA VEZ cuando el componente se monta
   useEffect(() => {
-    console.log('📌 UserList montado');
-    loadAllData();
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadAllData();
+    }
   }, []);
 
   const loadAllData = async () => {
@@ -144,6 +148,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
       }
       
       // Mostrar mensaje temporal de éxito
+      setSuccessMessage('Datos actualizados correctamente');
       setTimeout(() => setSuccessMessage(''), 2000);
       
     } catch (error) {
@@ -157,7 +162,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
   };
 
   const loadPermissionsAndStats = async (adminId, userRole) => {
-    console.log('Cargando permisos y estadísticas...');
+    console.log('🔐 Cargando permisos y estadísticas...');
     
     try {
       // Cargar permisos
@@ -366,7 +371,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
       <div className="userlist-error">
         <FaExclamationTriangle />
         <span>Error: {error}</span>
-        <button onClick={() => { setLoading(true); loadAllData(); }} className="retry-btn">
+        <button onClick={() => { initialLoadDone.current = false; loadAllData(); }} className="retry-btn">
           Reintentar
         </button>
       </div>
@@ -416,7 +421,12 @@ export function UserList({ currentAdminId, currentUserRole }) {
           </button>
           {dailyStats && permissions.canCreate && (
             <div className="daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? '∞' : dailyStats.limit}`}>
-              Creados hoy: {dailyStats.used}/{dailyStats.limit === 0 ? '∞' : dailyStats.limit}
+              📊 Creados hoy: {dailyStats.used}/{dailyStats.limit === 0 ? '∞' : dailyStats.limit}
+            </div>
+          )}
+          {editStats && permissions.canEdit && editStats.limit > 0 && (
+            <div className="edit-stats-badge" title={`Editados hoy: ${editStats.used} / ${editStats.limit}`}>
+              ✏️ Editados hoy: {editStats.used}/{editStats.limit}
             </div>
           )}
           {(permissions.canCreate || currentUserRole === 0) && (

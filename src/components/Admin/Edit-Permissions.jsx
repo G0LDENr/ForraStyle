@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaSave, FaTimes, FaPlus, FaEdit, FaTrash, FaExclamationTriangle, FaInfinity, FaSync, FaCheck, FaSpinner } from 'react-icons/fa';
+import { FaSave, FaTimes, FaPlus, FaEdit, FaTrash, FaExclamationTriangle, FaInfinity, FaSync, FaSpinner } from 'react-icons/fa';
 import { UserController } from '../../controllers/UserController';
 import '../../css/admin/edit-permissions.css';
 
@@ -15,12 +15,11 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
-  const [showResetSuccess, setShowResetSuccess] = useState(false);
 
   // Actualizar tempPermissions cuando cambian los permisos o se abre el modal
   useEffect(() => {
     if (isOpen && permissions) {
-      console.log('Inicializando modal con permisos:', permissions);
+      console.log('📝 Inicializando modal con permisos:', permissions);
       setTempPermissions({
         createUsers: { 
           enabled: permissions.createUsers?.enabled || false, 
@@ -71,12 +70,10 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
       
       if (result.success) {
         setResetMessage('✅ Contadores reiniciados exitosamente');
-        setShowResetSuccess(true);
+        setTimeout(() => setResetMessage(''), 3000);
         
-        // Disparar evento para que UserList actualice solo estadísticas
+        // Disparar evento para actualizar estadísticas
         window.dispatchEvent(new CustomEvent('refreshStats'));
-        
-        setTimeout(() => setShowResetSuccess(false), 3000);
       } else {
         setResetMessage(`❌ Error: ${result.error}`);
         setTimeout(() => setResetMessage(''), 3000);
@@ -92,9 +89,8 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
 
   const handleSave = async () => {
     setSaving(true);
-    console.log('Guardando permisos:', tempPermissions);
+    console.log('💾 Guardando permisos:', tempPermissions);
     
-    // Asegurar que todos los campos tengan valores válidos
     const permissionsToSave = {
       createUsers: {
         enabled: tempPermissions.createUsers?.enabled || false,
@@ -143,10 +139,9 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
               </button>
               <small className="reset-help-text">
                 ⚠️ Esto reiniciará los contadores de creaciones y ediciones del día actual para este administrador.
-                Los usuarios editados hoy podrán ser editados nuevamente.
               </small>
               {resetMessage && (
-                <div className={`reset-message ${resetMessage.includes('') ? 'success' : 'error'}`}>
+                <div className={`reset-message ${resetMessage.includes('✅') ? 'success' : 'error'}`}>
                   {resetMessage}
                 </div>
               )}
@@ -191,11 +186,6 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
                       <FaInfinity /> Sin Límite
                     </button>
                   </div>
-                  <small>
-                    {tempPermissions.createUsers?.dailyLimit === 0 
-                      ? "Límite infinito - Puede crear usuarios ilimitados por día" 
-                      : `Límite actual: ${tempPermissions.createUsers?.dailyLimit} usuario(s) por día`}
-                  </small>
                 </div>
               )}
             </div>
@@ -238,11 +228,6 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
                         <FaInfinity /> Sin Límite
                       </button>
                     </div>
-                    <small>
-                      {tempPermissions.editUsers?.dailyLimit === 0 
-                        ? "Límite infinito - Puede editar usuarios ilimitadas veces por día" 
-                        : `Límite actual: ${tempPermissions.editUsers?.dailyLimit} edición(es) por usuario al día`}
-                    </small>
                   </div>
                   <label className="edit-checkbox-label sub-permission">
                     <input 

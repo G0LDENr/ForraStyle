@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserController } from '../../controllers/UserController';
 import EditPermissionsModal from './Edit-Permissions';
-import { FaUserShield, FaSync, FaCheck, FaTimes, FaEdit, FaSpinner, FaSearch } from 'react-icons/fa';
+import { FaUserShield, FaSync, FaCheck, FaTimes, FaEdit, FaSpinner } from 'react-icons/fa';
 import '../../css/admin/permission-manager.css';
 
 const PermissionManager = ({ currentUserRole, currentUserId }) => {
@@ -18,25 +18,17 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState(null);
 
-  useEffect(() => {
-    loadAdmins();
-  }, []);
-
-  useEffect(() => {
-    filterAdmins();
-  }, [searchTerm, admins]);
-
   // Función para convertir cualquier valor a booleano
-  const toBoolean = (value) => {
+  const toBoolean = useCallback((value) => {
     if (value === true || value === false) return value;
     if (value === 1 || value === 0) return value === 1;
     if (typeof value === 'string') {
       return value.toLowerCase() === 'true' || value === '1';
     }
     return false;
-  };
+  }, []);
 
-  const loadAdmins = async () => {
+  const loadAdmins = useCallback(async () => {
     console.log('🚀 Iniciando carga de administradores...');
     setLoading(true);
     setError(null);
@@ -53,11 +45,9 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
           adminUsers.map(async (admin) => {
             console.log(`\n📌 Procesando admin: ${admin.name} (ID: ${admin.id})`);
             
-            // Obtener permisos - El controlador ahora maneja correctamente el rol 0
             const permissions = await UserController.getUserPermissions(admin.id, currentUserRole);
             console.log(`🔐 Permisos recibidos para ${admin.name}:`, permissions);
             
-            // Si por alguna razón vienen null, usar valores por defecto
             if (!permissions) {
               console.log(`⚠️ No se encontraron permisos para ${admin.name}, usando valores por defecto`);
               const normalizedPermissions = {
@@ -72,7 +62,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
               };
             }
             
-            // Normalizar los permisos
             const normalizedPermissions = {
               createUsers: { 
                 enabled: toBoolean(permissions.canCreate), 
@@ -113,9 +102,9 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
       setLoading(false);
       console.log('🏁 Carga finalizada');
     }
-  };
+  }, [currentUserId, currentUserRole, toBoolean]);
 
-  const filterAdmins = () => {
+  const filterAdmins = useCallback(() => {
     if (!searchTerm.trim()) {
       setFilteredAdmins(admins);
       setCurrentPage(1);
@@ -130,7 +119,15 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
     
     setFilteredAdmins(filtered);
     setCurrentPage(1);
-  };
+  }, [searchTerm, admins]);
+
+  useEffect(() => {
+    loadAdmins();
+  }, [loadAdmins]);
+
+  useEffect(() => {
+    filterAdmins();
+  }, [filterAdmins]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
@@ -275,7 +272,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                 </td>
                 <td data-label="Email">{admin.email}</td>
                 
-                {/* Crear Usuarios */}
                 <td data-label="Crear Usuarios">
                   <div className="permission-status">
                     {admin.permissions.createUsers.enabled ? (
@@ -296,7 +292,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                   </div>
                 </td>
                 
-                {/* Editar Usuarios */}
                 <td data-label="Editar Usuarios">
                   <div className="permission-status">
                     {admin.permissions.editUsers.enabled ? (
@@ -317,7 +312,6 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                   </div>
                 </td>
                 
-                {/* Eliminar Usuarios */}
                 <td data-label="Eliminar Usuarios">
                   <div className="permission-status">
                     {admin.permissions.deleteUsers.enabled ? (
