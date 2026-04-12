@@ -18,7 +18,6 @@ export function UserList({ currentAdminId, currentUserRole }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [usersPerPage] = useState(10);
   const [dailyStats, setDailyStats] = useState(null);
-  const [editStats, setEditStats] = useState(null);
   const [permissions, setPermissions] = useState({
     canCreate: false,
     canEdit: false,
@@ -42,7 +41,6 @@ export function UserList({ currentAdminId, currentUserRole }) {
   
   const initialLoadDone = React.useRef(false);
 
-  // Función para obtener adminId y userRole de manera consistente
   const getAdminIdAndRole = useCallback(() => {
     let adminId = currentAdminId;
     let userRole = currentUserRole;
@@ -60,10 +58,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
   }, [currentAdminId, currentUserRole]);
 
   const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
-    console.log('🔐 Cargando permisos y estadísticas...');
-    
     try {
-      // Cargar permisos
       const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
       if (permissionsResult) {
         setPermissions({
@@ -80,37 +75,27 @@ export function UserList({ currentAdminId, currentUserRole }) {
         });
       }
       
-      // Cargar estadísticas de creación
       const stats = await UserController.getDailyStats(adminId, userRole);
       setDailyStats(stats);
-      console.log('📊 Estadísticas de creación:', stats);
       
-      // Cargar estadísticas de edición
-      const editStatsData = await UserController.getDailyEditStats(adminId, userRole);
-      setEditStats(editStatsData);
-      console.log('📊 Estadísticas de edición:', editStatsData);
     } catch (error) {
-      console.error('Error cargando permisos/estadísticas:', error);
+      console.error('Error cargando permisos/estadisticas:', error);
     }
   }, []);
 
   const loadAllData = useCallback(async () => {
     setLoading(true);
-    console.log('🚀 Cargando datos...');
     
     try {
       const { adminId, userRole } = getAdminIdAndRole();
       
-      // Cargar usuarios
       const usersResult = await UserController.getUsers(adminId, userRole);
       if (usersResult.success) {
         setUsers(usersResult.data);
-        console.log('✅ Usuarios cargados:', usersResult.data.length);
       } else {
         setError(usersResult.error);
       }
       
-      // Cargar permisos según el rol
       if (userRole === 1 && adminId) {
         await loadPermissionsAndStats(adminId, userRole);
       } else if (userRole === 0) {
@@ -132,11 +117,9 @@ export function UserList({ currentAdminId, currentUserRole }) {
       setError('Error al cargar los datos');
     } finally {
       setLoading(false);
-      console.log('🏁 Carga finalizada');
     }
   }, [getAdminIdAndRole, loadPermissionsAndStats]);
 
-  // Cargar datos SOLO UNA VEZ cuando el componente se monta
   useEffect(() => {
     if (!initialLoadDone.current) {
       initialLoadDone.current = true;
@@ -144,22 +127,17 @@ export function UserList({ currentAdminId, currentUserRole }) {
     }
   }, [loadAllData]);
 
-  // Función para refrescar todos los datos (manual)
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    console.log('🔄 Refrescando datos manualmente...');
     
     try {
       const { adminId, userRole } = getAdminIdAndRole();
       
-      // Recargar usuarios
       const usersResult = await UserController.getUsers(adminId, userRole);
       if (usersResult.success) {
         setUsers(usersResult.data);
-        console.log('✅ Usuarios refrescados:', usersResult.data.length);
       }
       
-      // Recargar permisos y estadísticas según el rol
       if (userRole === 1 && adminId) {
         await loadPermissionsAndStats(adminId, userRole);
       } else if (userRole === 0) {
@@ -177,10 +155,6 @@ export function UserList({ currentAdminId, currentUserRole }) {
         });
       }
       
-      // Mostrar mensaje temporal de éxito
-      setSuccessMessage('Datos actualizados correctamente');
-      setTimeout(() => setSuccessMessage(''), 2000);
-      
     } catch (error) {
       console.error('Error refrescando:', error);
       setPermissionError('Error al refrescar los datos');
@@ -191,9 +165,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
     }
   }, [getAdminIdAndRole, loadPermissionsAndStats]);
 
-  // Función para refrescar usuarios después de crear/editar/eliminar
   const refreshUsers = useCallback(async () => {
-    console.log('🔄 Refrescando usuarios...');
     try {
       const { adminId, userRole } = getAdminIdAndRole();
       const result = await UserController.getUsers(adminId, userRole);
@@ -205,18 +177,13 @@ export function UserList({ currentAdminId, currentUserRole }) {
     }
   }, [getAdminIdAndRole]);
 
-  // Función para refrescar estadísticas después de crear/editar
   const refreshStats = useCallback(async () => {
-    console.log('📊 Refrescando estadísticas...');
     try {
       const { adminId, userRole } = getAdminIdAndRole();
       
       if (userRole === 1 && adminId) {
         const stats = await UserController.getDailyStats(adminId, userRole);
         setDailyStats(stats);
-        
-        const editStatsData = await UserController.getDailyEditStats(adminId, userRole);
-        setEditStats(editStatsData);
         
         const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
         if (permissionsResult) {
@@ -228,7 +195,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
         }
       }
     } catch (error) {
-      console.error('Error refrescando estadísticas:', error);
+      console.error('Error refrescando estadisticas:', error);
     }
   }, [getAdminIdAndRole]);
 
@@ -286,13 +253,11 @@ export function UserList({ currentAdminId, currentUserRole }) {
   };
 
   const handleUserCreated = async () => {
-    console.log('🔄 Usuario creado, actualizando datos...');
     await refreshUsers();
     await refreshStats();
   };
 
   const handleUserUpdated = async () => {
-    console.log('🔄 Usuario actualizado, actualizando datos...');
     await refreshUsers();
     await refreshStats();
   };
@@ -340,7 +305,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
   return (
     <div className="userlist-container">
       <div className="userlist-header">
-        <h2 className="userlist-title"><FaUsers className="userlist-title-icon" /> Gestión de Usuarios</h2>
+        <h2 className="userlist-title"><FaUsers className="userlist-title-icon" /> Gestion de Usuarios</h2>
       </div>
 
       {showPermissionDenied && (
@@ -379,13 +344,8 @@ export function UserList({ currentAdminId, currentUserRole }) {
             <FaSync className={refreshing ? 'spinning' : ''} /> {refreshing ? 'Actualizando...' : 'Actualizar'}
           </button>
           {dailyStats && permissions.canCreate && (
-            <div className="daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? '∞' : dailyStats.limit}`}>
-              📊 Creados hoy: {dailyStats.used}/{dailyStats.limit === 0 ? '∞' : dailyStats.limit}
-            </div>
-          )}
-          {editStats && permissions.canEdit && editStats.limit > 0 && (
-            <div className="edit-stats-badge" title={`Editados hoy: ${editStats.used} / ${editStats.limit}`}>
-              ✏️ Editados hoy: {editStats.used}/{editStats.limit}
+            <div className="daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? 'Sin limite' : dailyStats.limit}`}>
+              Creados hoy: {dailyStats.used} / {dailyStats.limit === 0 ? 'Sin limite' : dailyStats.limit}
             </div>
           )}
           {permissions.canCreate && (
@@ -403,7 +363,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
               <th>ID</th>
               <th>Nombre</th>
               <th>Email</th>
-              <th>Teléfono</th>
+              <th>Telefono</th>
               <th>Edad</th>
               <th>Rol</th>
               <th>Acciones</th>
@@ -420,7 +380,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
                   <td>{user.name}</td>
                   <td><a href={`mailto:${user.email}`} className="userlist-email">{user.email}</a></td>
                   <td>{user.phone || '—'}</td>
-                  <td>{user.age ? `${user.age} años` : '—'}</td>
+                  <td>{user.age ? `${user.age} anos` : '—'}</td>
                   <td>
                     <span className={`user-role-badge ${user.rol === 1 ? 'role-admin' : user.rol === 0 ? 'role-superadmin' : 'role-user'}`}>
                       {user.rol === 0 ? 'Super Admin' : user.rol === 1 ? 'Administrador' : 'Usuario'}
@@ -462,7 +422,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
           </div>
           <div className="pagination-controls">
             <button onClick={prevPage} disabled={currentPage === 1} className="pagination-btn">Anterior</button>
-            <span className="pagination-current">Página {currentPage} de {totalPages}</span>
+            <span className="pagination-current">Pagina {currentPage} de {totalPages}</span>
             <button onClick={nextPage} disabled={currentPage === totalPages} className="pagination-btn">Siguiente</button>
           </div>
         </div>
@@ -491,11 +451,11 @@ export function UserList({ currentAdminId, currentUserRole }) {
       {showConfirmModal && (
         <div className="userlist-modal-overlay" onClick={() => setShowConfirmModal(false)}>
           <div className="userlist-modal-container" onClick={(e) => e.stopPropagation()}>
-            <div className="userlist-modal-header"><h3>Confirmar Eliminación</h3></div>
+            <div className="userlist-modal-header"><h3>Confirmar Eliminacion</h3></div>
             <div className="userlist-modal-body">
-              <p>¿Estás seguro de que deseas eliminar este usuario?</p>
+              <p>¿Estas seguro de que deseas eliminar este usuario?</p>
               <p className="userlist-modal-item"><strong>{userToDelete?.name}</strong></p>
-              <p className="userlist-modal-warning">⚠️ Esta acción no se puede deshacer.</p>
+              <p className="userlist-modal-warning">Esta accion no se puede deshacer.</p>
             </div>
             <div className="userlist-modal-footer">
               <button className="userlist-modal-cancel" onClick={() => setShowConfirmModal(false)}>Cancelar</button>
@@ -511,7 +471,7 @@ export function UserList({ currentAdminId, currentUserRole }) {
         <div className="userlist-success-overlay">
           <div className="userlist-success-container">
             <div className="userlist-success-icon"><FaCheckCircle /></div>
-            <h3>¡Éxito!</h3>
+            <h3>Exito</h3>
             <p>{successMessage}</p>
           </div>
         </div>
