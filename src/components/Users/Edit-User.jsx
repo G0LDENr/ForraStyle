@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { UserController } from '../../controllers/UserController';
+import { FaCheckCircle, FaSpinner } from 'react-icons/fa';
 import '../../css/user/edit-user.css';
 
-export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
+export function EditUserModal({ isOpen, onClose, onUserUpdated, user, currentUserRole, currentAdminId }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -13,6 +14,7 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (user && isOpen) {
@@ -21,10 +23,13 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
         email: user.email || '',
         phone: user.phone || '',
         age: user.age || '',
-        password: '', // La contraseña se deja vacía para no mostrarla
+        password: '',
         rol: user.rol || 2
       });
+      setError('');
+      setSuccess('');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, isOpen]);
 
   const handleInputChange = (e) => {
@@ -33,12 +38,14 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
       [e.target.name]: e.target.value
     });
     setError('');
+    setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
     
     // Validaciones
     if (!formData.name.trim()) {
@@ -90,11 +97,22 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
       userData.password = formData.password;
     }
     
-    const result = await UserController.updateUser(user.id, userData);
+    const result = await UserController.updateUser(
+      user.id, 
+      userData, 
+      currentAdminId, 
+      currentUserRole
+    );
     
     if (result.success) {
-      onUserUpdated();
-      onClose();
+      setSuccess('✅ Usuario actualizado exitosamente');
+      onUserUpdated(user.id, userData);
+      
+      // Cerrar el modal después de 4 segundos
+      setTimeout(() => {
+        onClose();
+        setSuccess('');
+      }, 4000);
     } else {
       setError(result.error);
     }
@@ -103,6 +121,42 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
   };
 
   if (!isOpen) return null;
+
+  // Determinar las opciones de rol según el rol del usuario actual
+  const getRoleOptions = () => {
+    const options = [];
+    
+    if (currentUserRole === 0) {
+      // Super Admin puede asignar cualquier rol
+      options.push(<option key={0} value={0}>Super Administrador</option>);
+      options.push(<option key={1} value={1}>Administrador</option>);
+      options.push(<option key={2} value={2}>Usuario Normal</option>);
+    } else if (currentUserRole === 1) {
+      // Admin normal solo puede asignar Administrador o Usuario Normal
+      options.push(<option key={1} value={1}>Administrador</option>);
+      options.push(<option key={2} value={2}>Usuario Normal</option>);
+    } else {
+      // Usuario normal solo puede ver su propio rol
+      options.push(<option key={formData.rol} value={formData.rol}>
+        {formData.rol === 0 ? 'Super Administrador' : formData.rol === 1 ? 'Administrador' : 'Usuario Normal'}
+      </option>);
+    }
+    
+    return options;
+  };
+
+  // Determinar si puede cambiar el rol
+  const canChangeRole = () => {
+    // No puede cambiar el rol de un Super Admin a menos que sea Super Admin
+    if (user?.rol === 0 && currentUserRole !== 0) return false;
+    // No puede cambiar su propio rol
+    if (user?.id === currentAdminId) return false;
+    // Si es Super Admin, siempre puede
+    if (currentUserRole === 0) return true;
+    // Si es Admin, puede cambiar roles excepto a Super Admin
+    if (currentUserRole === 1 && user?.rol !== 0) return true;
+    return false;
+  };
 
   return (
     <div className="edit-modal-overlay" onClick={onClose}>
@@ -117,6 +171,13 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
         {error && (
           <div className="edit-error-message">
             {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="edit-success-message">
+            <FaCheckCircle className="edit-success-icon" />
+            <span>{success}</span>
           </div>
         )}
         
@@ -193,15 +254,11 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
               value={formData.rol}
               onChange={handleInputChange}
               required
-              disabled={loading}
+              disabled={loading || !canChangeRole()}
               className="edit-rol-select"
             >
-              <option value={2}>Usuario Normal</option>
-              <option value={1}>Administrador</option>
+              {getRoleOptions()}
             </select>
-            <small className="edit-form-hint">
-              {formData.rol === 1 ? 'El administrador tiene acceso total al sistema' : 'El usuario solo tiene acceso a sus pedidos'}
-            </small>
           </div>
           
           <div className="edit-modal-footer">
@@ -209,7 +266,7 @@ export function EditUserModal({ isOpen, onClose, onUserUpdated, user }) {
               Cancelar
             </button>
             <button type="submit" className="edit-btn-submit" disabled={loading}>
-              {loading ? 'Actualizando...' : 'Actualizar Usuario'}
+              {loading ? <><FaSpinner className="edit-spinner" /> Actualizando...</> : 'Actualizar Usuario'}
             </button>
           </div>
         </form>

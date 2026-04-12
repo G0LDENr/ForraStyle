@@ -193,6 +193,41 @@ form {
   cursor: not-allowed;
 }
 
+/* edit-user.css - agregar */
+
+.edit-success-message {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  border-left: 4px solid #10b981;
+  animation: slideDown 0.3s ease;
+}
+
+.edit-success-icon {
+  font-size: 18px;
+  color: #10b981;
+}
+
+.edit-spinner {
+  animation: spin 1s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Animaciones */
 @keyframes editFadeIn {
   from {
