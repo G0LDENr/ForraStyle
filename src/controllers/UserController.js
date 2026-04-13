@@ -174,7 +174,9 @@ export const UserController = {
 
   async getDailyStats(currentAdminId, currentUserRole) {
     if (currentUserRole !== 1) return null
-    return await AdminPermissionModel.getDailyCreationStats(currentAdminId)
+    const stats = await AdminPermissionModel.getDailyCreationStats(currentAdminId)
+    console.log('Estadísticas de creación obtenidas:', stats)
+    return stats
   },
 
   async getDailyEditStats(currentAdminId, currentUserRole) {
@@ -184,7 +186,7 @@ export const UserController = {
 
   // CORREGIDO: Usar el método getUserPermissions del modelo
   async getUserPermissions(adminId, currentUserRole) {
-    console.log(`🔐 getUserPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
+    console.log(`getUserPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
     
     // Super Admin (rol 0) puede ver todos los permisos
     // Administradores (rol 1) pueden ver sus propios permisos

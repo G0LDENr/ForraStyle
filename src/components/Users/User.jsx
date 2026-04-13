@@ -57,6 +57,19 @@ export function UserList({ currentAdminId, currentUserRole }) {
     return { adminId, userRole };
   }, [currentAdminId, currentUserRole]);
 
+  // Escuchar evento de actualización de permisos
+  useEffect(() => {
+    const handlePermissionsUpdated = () => {
+      console.log('🔄 Permisos actualizados, recargando...');
+      refreshStats();
+    };
+    
+    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
+    return () => {
+      window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
+    };
+  }, []);
+
   const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
     try {
       const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
@@ -187,11 +200,18 @@ export function UserList({ currentAdminId, currentUserRole }) {
         
         const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
         if (permissionsResult) {
-          setPermissions(prev => ({
-            ...prev,
-            currentCreateCount: permissionsResult.currentDailyCount || 0,
-            currentEditCount: permissionsResult.currentEditCount || 0
-          }));
+          setPermissions({
+            canCreate: permissionsResult.canCreate || false,
+            canEdit: permissionsResult.canEdit || false,
+            canDelete: permissionsResult.canDelete || false,
+            canEditAdmins: permissionsResult.canEditAdmins || false,
+            canDeleteAdmins: permissionsResult.canDeleteAdmins || false,
+            canDeleteSuperAdmin: permissionsResult.canDeleteSuperAdmin || false,
+            editDailyLimit: permissionsResult.editDailyLimit || 0,
+            currentEditCount: permissionsResult.currentEditCount || 0,
+            createDailyLimit: permissionsResult.dailyLimit || 0,
+            currentCreateCount: permissionsResult.currentDailyCount || 0
+          });
         }
       }
     } catch (error) {
@@ -199,13 +219,25 @@ export function UserList({ currentAdminId, currentUserRole }) {
     }
   }, [getAdminIdAndRole]);
 
+  // Función para verificar si puede crear (considerando límite 0 como infinito)
+  const canCreateUser = useCallback(() => {
+    if (currentUserRole === 0) return true;
+    if (!permissions.canCreate) return false;
+    // Si el límite es 0, significa sin límite, siempre puede crear
+    if (permissions.createDailyLimit === 0) return true;
+    // Si hay límite, verificar que no lo haya alcanzado
+    return permissions.currentCreateCount < permissions.createDailyLimit;
+  }, [currentUserRole, permissions.canCreate, permissions.createDailyLimit, permissions.currentCreateCount]);
+
   const canEditSpecificUser = useCallback((user) => {
     if (currentUserRole === 0) return true;
     if (!permissions.canEdit) return false;
     if (user.rol === 0) return false;
     if (user.rol === 1 && !permissions.canEditAdmins) return false;
-    return true;
-  }, [currentUserRole, permissions.canEdit, permissions.canEditAdmins]);
+    // Para edición, también considerar límite infinito
+    if (permissions.editDailyLimit === 0) return true;
+    return permissions.currentEditCount < permissions.editDailyLimit;
+  }, [currentUserRole, permissions.canEdit, permissions.canEditAdmins, permissions.editDailyLimit, permissions.currentEditCount]);
 
   const canDeleteSpecificUser = useCallback((user) => {
     if (currentUserRole === 0) return true;
@@ -249,6 +281,18 @@ export function UserList({ currentAdminId, currentUserRole }) {
   };
 
   const handleCreateClick = () => {
+    if (!canCreateUser()) {
+      let errorMsg = 'No tienes permiso para crear usuarios';
+      if (permissions.createDailyLimit > 0 && permissions.currentCreateCount >= permissions.createDailyLimit) {
+        errorMsg = `Limite de creacion alcanzado. Solo puedes crear ${permissions.createDailyLimit} usuarios por dia`;
+      } else if (!permissions.canCreate) {
+        errorMsg = 'No tienes permiso para crear usuarios';
+      }
+      setPermissionError(errorMsg);
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+      return;
+    }
     setIsCreateModalOpen(true);
   };
 

@@ -137,11 +137,24 @@ export const AdminPermissionModel = {
     const today = new Date().toISOString().split('T')[0];
     let currentCount = permissions.create_current_count;
     
+    // Resetear contador si es un nuevo día
     if (permissions.create_last_reset !== today) {
       currentCount = 0;
+      // Actualizar el contador en la base de datos
+      await supabase
+        .from('admin_permissions')
+        .update({
+          create_current_count: 0,
+          create_last_reset: today
+        })
+        .eq('admin_id', adminId);
     }
     
-    return permissions.create_daily_limit === 0 || currentCount < permissions.create_daily_limit;
+    // Si el límite es 0, significa sin límite, siempre puede crear
+    if (permissions.create_daily_limit === 0) return true;
+    
+    // Si hay límite, verificar que no lo haya alcanzado
+    return currentCount < permissions.create_daily_limit;
   },
 
   // Registrar creación de usuario
@@ -149,6 +162,8 @@ export const AdminPermissionModel = {
     const today = new Date().toISOString().split('T')[0];
     const permissions = await this.getByAdminId(adminId);
     
+    // Siempre incrementar el contador, incluso si el límite es 0
+    // Esto es para llevar estadísticas
     let newCount = permissions.create_current_count;
     if (permissions.create_last_reset !== today) {
       newCount = 1;
