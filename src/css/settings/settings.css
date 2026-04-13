@@ -1,0 +1,567 @@
+.settings-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+/* Header */
+.settings-header {
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: left;
+}
+
+.settings-title {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  text-align: left;
+}
+
+.settings-title-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin: 0;
+}
+
+/* Card principal */
+.settings-card {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+/* Secciones */
+.settings-section {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.settings-section:last-child {
+  border-bottom: none;
+}
+
+.settings-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.settings-section-icon {
+  font-size: 1.1rem;
+  color: #3b82f6;
+}
+
+/* Items de configuración */
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.settings-item:last-child {
+  border-bottom: none;
+}
+
+.settings-item label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.settings-item span {
+  color: #000000;
+  font-size: 0.875rem;
+}
+
+/* Badges de rol */
+.settings-badge-admin {
+  background: #3b82f6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+}
+
+.settings-badge-super {
+  background: #ef4444;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+}
+
+/* Lista de permisos */
+.settings-permissions-list {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+}
+
+.settings-permission-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.settings-permission-item:last-child {
+  border-bottom: none;
+}
+
+.settings-permission-label {
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.settings-permission-enabled {
+  color: #10b981;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.settings-permission-disabled {
+  color: #ef4444;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Zona de peligro */
+.settings-danger-section {
+  background: #fef2f2;
+  border-top: 1px solid #fecaca;
+}
+
+.settings-danger-title {
+  color: #dc2626;
+}
+
+.settings-danger-title .settings-section-icon {
+  color: #dc2626;
+}
+
+.settings-danger-item {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.settings-danger-item label {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.settings-clear-data-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.settings-clear-data-btn:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.settings-warning-text {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin: 0;
+}
+
+/* Modal de confirmación */
+.settings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: settings-fadeIn 0.3s ease-out;
+}
+
+.settings-modal-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  animation: settings-slideUp 0.3s ease-out;
+}
+
+.settings-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fef2f2;
+}
+
+.settings-modal-warning-icon {
+  font-size: 1.5rem;
+  color: #dc2626;
+}
+
+.settings-modal-header h3 {
+  color: #dc2626;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.settings-modal-body {
+  padding: 1.5rem;
+}
+
+.settings-modal-body p {
+  color: #374151;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.settings-modal-warning {
+  color: #dc2626;
+  font-weight: 500;
+  margin-top: 1rem;
+}
+
+.settings-modal-body ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.settings-modal-body li {
+  color: #4b5563;
+  font-size: 0.875rem;
+  margin: 0.25rem 0;
+}
+
+.settings-modal-warning-text {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 1rem;
+  font-weight: 500;
+}
+
+.settings-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.settings-modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.settings-modal-cancel:hover {
+  background: #e5e7eb;
+}
+
+.settings-modal-confirm {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #dc2626;
+  color: white;
+}
+
+.settings-modal-confirm:hover:not(:disabled) {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+.settings-modal-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Agrega al final de tu settings.css */
+
+/* Mensajes */
+.settings-message {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.settings-message-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.settings-message-error {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Loading */
+.settings-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: #6b7280;
+}
+
+.settings-loading .spinner {
+  animation: settings-spin 1s linear infinite;
+}
+
+@keyframes settings-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Ganancias */
+.settings-earnings-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.settings-earnings-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+  background: #f3f4f6;
+  border-radius: 10px;
+  transition: transform 0.2s;
+}
+
+.settings-earnings-card:hover {
+  transform: translateY(-2px);
+}
+
+.settings-earnings-icon {
+  font-size: 1.8rem;
+  color: #3b82f6;
+}
+
+.settings-earnings-info label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.settings-earnings-info p {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #1e3a8a;
+  margin: 0;
+}
+
+/* Botón editar */
+.settings-edit-earnings-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.settings-edit-earnings-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Formulario edición */
+.settings-edit-earnings-form {
+  background: #f9fafb;
+  padding: 20px;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.settings-edit-form-group {
+  margin-bottom: 15px;
+}
+
+.settings-edit-form-group label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.settings-edit-form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.settings-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.settings-cancel-edit-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.settings-cancel-edit-btn:hover {
+  background: #e5e7eb;
+}
+
+.settings-save-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.settings-save-edit-btn:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.settings-save-edit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-save-edit-btn .spinner {
+  animation: settings-spin 1s linear infinite;
+}
+
+/* Animaciones */
+@keyframes settings-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes settings-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .settings-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .settings-permission-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .settings-modal-container {
+    width: 95%;
+  }
+}
+
+@media (max-width: 640px) {
+  .settings-section {
+    padding: 1rem;
+  }
+  
+  .settings-title {
+    font-size: 1.2rem;
+  }
+  
+  .settings-title-icon {
+    font-size: 1.2rem;
+  }
+}

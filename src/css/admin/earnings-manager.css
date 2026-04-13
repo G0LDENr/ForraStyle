@@ -1,0 +1,674 @@
+.earnings-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+/* Header */
+.earnings-header {
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: left;
+}
+
+.earnings-title {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  text-align: left;
+}
+
+.earnings-title-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin: 0;
+}
+
+/* Mensaje */
+.earnings-message {
+  padding: 12px 16px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* Tabla */
+.earnings-table-container {
+  overflow-x: auto;
+}
+
+.earnings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.earnings-table thead {
+  background: #f9fafb;
+}
+
+.earnings-table th {
+  text-align: left;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.earnings-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+.earnings-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Botón editar */
+.earnings-edit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.earnings-edit-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Loading */
+.earnings-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+}
+
+.earnings-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: earnings-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.earnings-loading p {
+  color: #6b7280;
+}
+
+@keyframes earnings-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modal */
+.earnings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: earnings-fadeIn 0.3s ease-out;
+}
+
+.earnings-modal-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  animation: earnings-slideUp 0.3s ease-out;
+}
+
+.earnings-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+}
+
+.earnings-modal-header h3 {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.earnings-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.earnings-modal-close:hover {
+  color: #ef4444;
+}
+
+.earnings-modal-body {
+  padding: 1.5rem;
+}
+
+.earnings-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.earnings-form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.earnings-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.earnings-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.earnings-form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.earnings-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: #f9fafb;
+}
+
+.earnings-modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.earnings-modal-cancel:hover {
+  background: #e5e7eb;
+}
+
+.earnings-modal-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #3b82f6;
+  color: white;
+}
+
+.earnings-modal-save:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.earnings-modal-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.earnings-modal-save .spinner {
+  animation: earnings-spin 1s linear infinite;
+}
+
+/* Animaciones */
+@keyframes earnings-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes earnings-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .earnings-table {
+    font-size: 0.75rem;
+  }
+  
+  .earnings-table th,
+  .earnings-table td {
+    padding: 0.5rem;
+  }
+  
+  .earnings-modal-container {
+    width: 95%;
+  }
+}
+
+@media (max-width: 640px) {
+  .earnings-table thead {
+    display: none;
+  }
+  
+  .earnings-table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .earnings-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.5rem;
+  }
+  
+  .earnings-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .earnings-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #374151;
+    margin-right: 1rem;
+  }
+}/* Earnings Manager Styles */
+.earnings-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+/* Header */
+.earnings-header {
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: left;
+}
+
+.earnings-title {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  text-align: left;
+}
+
+.earnings-title-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin: 0;
+}
+
+/* Mensaje */
+.earnings-message {
+  padding: 12px 16px;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+/* Tabla */
+.earnings-table-container {
+  overflow-x: auto;
+}
+
+.earnings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.earnings-table thead {
+  background: #f9fafb;
+}
+
+.earnings-table th {
+  text-align: left;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.earnings-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+.earnings-table tr:hover {
+  background: #f9fafb;
+}
+
+/* Botón editar */
+.earnings-edit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.earnings-edit-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+/* Loading */
+.earnings-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+}
+
+.earnings-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: earnings-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.earnings-loading p {
+  color: #6b7280;
+}
+
+@keyframes earnings-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Modal */
+.earnings-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  animation: earnings-fadeIn 0.3s ease-out;
+}
+
+.earnings-modal-container {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  overflow: hidden;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  animation: earnings-slideUp 0.3s ease-out;
+}
+
+.earnings-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f9fafb;
+}
+
+.earnings-modal-header h3 {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.earnings-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.earnings-modal-close:hover {
+  color: #ef4444;
+}
+
+.earnings-modal-body {
+  padding: 1.5rem;
+}
+
+.earnings-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.earnings-form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.earnings-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.earnings-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.earnings-form-group small {
+  display: block;
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.earnings-modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  background: #f9fafb;
+}
+
+.earnings-modal-cancel {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.earnings-modal-cancel:hover {
+  background: #e5e7eb;
+}
+
+.earnings-modal-save {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  background: #3b82f6;
+  color: white;
+}
+
+.earnings-modal-save:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.earnings-modal-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.earnings-modal-save .spinner {
+  animation: earnings-spin 1s linear infinite;
+}
+
+/* Animaciones */
+@keyframes earnings-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes earnings-slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .earnings-table {
+    font-size: 0.75rem;
+  }
+  
+  .earnings-table th,
+  .earnings-table td {
+    padding: 0.5rem;
+  }
+  
+  .earnings-modal-container {
+    width: 95%;
+  }
+}
+
+@media (max-width: 640px) {
+  .earnings-table thead {
+    display: none;
+  }
+  
+  .earnings-table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+  }
+  
+  .earnings-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 0.5rem;
+  }
+  
+  .earnings-table td:last-child {
+    border-bottom: none;
+  }
+  
+  .earnings-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #374151;
+    margin-right: 1rem;
+  }
+}

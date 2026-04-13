@@ -1,0 +1,172 @@
+.admin-earnings-container {
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  width: 100%;
+}
+
+/* Header */
+.admin-earnings-header {
+  margin-bottom: 24px;
+  width: 100%;
+  text-align: left;
+}
+
+.admin-earnings-title {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  text-align: left;
+}
+
+.admin-earnings-title-icon {
+  font-size: 1.5rem;
+  color: #3b82f6;
+  margin: 0;
+}
+
+/* Tarjetas de ganancias */
+.admin-earnings-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.earnings-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 20px;
+  background: #f9fafb;
+  border-radius: 12px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.earnings-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.earnings-card-icon {
+  font-size: 2rem;
+  color: #3b82f6;
+}
+
+.earnings-card-info h3 {
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin: 0 0 5px 0;
+}
+
+.earnings-card-info p {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0;
+  color: #1e3a8a;
+}
+
+.earnings-card-total .earnings-card-icon { color: #8b5cf6; }
+.earnings-card-monthly .earnings-card-icon { color: #10b981; }
+.earnings-card-ship .earnings-card-icon { color: #f59e0b; }
+.earnings-card-employee .earnings-card-icon { color: #3b82f6; }
+
+/* Información */
+.admin-earnings-info {
+  background: #f0fdf4;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #dcfce7;
+}
+
+.admin-earnings-info h3 {
+  color: #166534;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+}
+
+.admin-earnings-info ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.admin-earnings-info li {
+  color: #14532d;
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+  line-height: 1.5;
+}
+
+.admin-earnings-info li strong {
+  color: #065f46;
+}
+
+/* Loading */
+.admin-earnings-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+}
+
+.admin-earnings-loading .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: admin-earnings-spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.admin-earnings-loading p {
+  color: #6b7280;
+}
+
+@keyframes admin-earnings-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-earnings-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .earnings-card {
+    padding: 15px;
+  }
+  
+  .earnings-card-icon {
+    font-size: 1.5rem;
+  }
+  
+  .earnings-card-info p {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-earnings-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .admin-earnings-title {
+    font-size: 1.2rem;
+  }
+  
+  .admin-earnings-title-icon {
+    font-size: 1.2rem;
+  }
+}

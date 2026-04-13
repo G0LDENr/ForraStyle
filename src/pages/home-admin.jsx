@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { UserList } from '../components/Users/User';
 import PermissionManager from '../components/Admin/PermissionManager';
 import { OrdersManager } from '../components/Pedidos/Pedidos';
-import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog, FaShieldAlt } from 'react-icons/fa';
+import { SettingsManager } from '../components/Settings/Settings';
+import { EarningsManager } from '../components/Admin/EarningsManager';
+import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog, FaShieldAlt, FaDollarSign } from 'react-icons/fa';
 import '../css/home/home-admin.css';
 
 const HomeAdmin = () => {
@@ -11,6 +13,7 @@ const HomeAdmin = () => {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ const HomeAdmin = () => {
       const userParsed = JSON.parse(user);
       console.log('User data from localStorage:', userParsed);
       setUserData(userParsed);
+      loadOrders();
       loadUsers();
     } catch (error) {
       console.error('Error parsing user data:', error);
@@ -47,6 +51,13 @@ const HomeAdmin = () => {
       navigate('/login');
     }
   }, [navigate]);
+
+  const loadOrders = () => {
+    const savedOrders = localStorage.getItem('orders');
+    if (savedOrders) {
+      setOrders(JSON.parse(savedOrders));
+    }
+  };
 
   const loadUsers = () => {
     const savedUsers = localStorage.getItem('users');
@@ -97,50 +108,29 @@ const HomeAdmin = () => {
       case 'orders':
         return <OrdersManager userRole={userData?.rol} />;
       
+      case 'earnings':
+        // Solo Super Admin ve esta sección en el menú
+        if (userData?.rol === 0) {
+          return <EarningsManager currentUserId={userData?.id} />;
+        }
+        return null;
+      
       case 'settings':
         return (
-          <div className="admin-settings-container">
-            <h2 className="admin-section-title">Configuración del Sistema</h2>
-            <div className="admin-settings-card">
-              <div className="admin-setting-item">
-                <label>Rol del usuario actual:</label>
-                <span className={userData?.rol === 0 ? 'admin-badge-super' : 'admin-badge-admin'}>
-                  {userData?.rol === 0 ? 'Super Administrador' : 'Administrador'}
-                </span>
-              </div>
-              <div className="admin-setting-item">
-                <label>Versión del sistema:</label>
-                <span>1.0.0</span>
-              </div>
-              <div className="admin-setting-item">
-                <label>Total de usuarios:</label>
-                <span>{users.length}</span>
-              </div>
-              
-              {userData?.rol === 0 && (
-                <div className="admin-setting-item">
-                  <button 
-                    className="admin-btn-clear-data"
-                    onClick={() => {
-                      if (window.confirm('¿Estás seguro de limpiar todos los datos?')) {
-                        localStorage.removeItem('orders');
-                        alert('Datos limpiados correctamente');
-                      }
-                    }}
-                  >
-                    Limpiar todos los datos
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+          <SettingsManager 
+            userData={userData}
+            users={users}
+            orders={orders}
+          />
         );
       
       default:
-        return <UserList 
-          currentAdminId={userData?.id}
-          currentUserRole={userData?.rol}
-        />;
+        return (
+          <UserList 
+            currentAdminId={userData?.id}
+            currentUserRole={userData?.rol}
+          />
+        );
     }
   };
 
@@ -200,6 +190,17 @@ const HomeAdmin = () => {
             <FaClipboardList className="admin-nav-icon" />
             Pedidos
           </button>
+
+          {/* Solo Super Admin ve Ganancias en el menú */}
+          {userData?.rol === 0 && (
+            <button 
+              className={`admin-nav-btn ${activeTab === 'earnings' ? 'active' : ''}`}
+              onClick={() => setActiveTab('earnings')}
+            >
+              <FaDollarSign className="admin-nav-icon" />
+              Ganancias
+            </button>
+          )}
 
           <button 
             className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
