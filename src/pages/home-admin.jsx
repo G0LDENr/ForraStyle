@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserList } from '../components/Users/User';
 import PermissionManager from '../components/Admin/PermissionManager';
+import { OrdersManager } from '../components/Pedidos/Pedidos';
 import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog, FaShieldAlt } from 'react-icons/fa';
 import '../css/home/home-admin.css';
 
@@ -10,9 +11,7 @@ const HomeAdmin = () => {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
-  const [adminPermissions, setAdminPermissions] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -39,13 +38,7 @@ const HomeAdmin = () => {
       const userParsed = JSON.parse(user);
       console.log('User data from localStorage:', userParsed);
       setUserData(userParsed);
-      loadOrders();
       loadUsers();
-      
-      // Cargar permisos si es admin (rol 1)
-      if (userParsed.rol === 1) {
-        loadAdminPermissions(userParsed.id);
-      }
     } catch (error) {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('token');
@@ -54,28 +47,6 @@ const HomeAdmin = () => {
       navigate('/login');
     }
   }, [navigate]);
-
-  const loadAdminPermissions = (adminId) => {
-    const permissions = localStorage.getItem(`admin_permissions_${adminId}`);
-    if (permissions) {
-      setAdminPermissions(JSON.parse(permissions));
-    } else {
-      // Permisos por defecto para nuevos admins
-      const defaultPermissions = {
-        createUsers: { enabled: false, dailyLimit: 0, currentCount: 0, lastReset: new Date().toDateString() },
-        editUsers: { enabled: false, canEditAdmins: false },
-        deleteUsers: { enabled: false, canDeleteAdmins: false }
-      };
-      setAdminPermissions(defaultPermissions);
-    }
-  };
-
-  const loadOrders = () => {
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
-  };
 
   const loadUsers = () => {
     const savedUsers = localStorage.getItem('users');
@@ -96,36 +67,6 @@ const HomeAdmin = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
-  const getStatusColor = (estado) => {
-    switch(estado) {
-      case 'pendiente': return '#f59e0b';
-      case 'procesando': return '#3b82f6';
-      case 'completado': return '#10b981';
-      case 'cancelado': return '#ef4444';
-      default: return '#6b7280';
-    }
-  };
-
-  const getStatusText = (estado) => {
-    switch(estado) {
-      case 'pendiente': return 'Pendiente';
-      case 'procesando': return 'Procesando';
-      case 'completado': return 'Completado';
-      case 'cancelado': return 'Cancelado';
-      default: return estado;
-    }
-  };
-
-  // Verificar si el admin puede ver pedidos (siempre true para admin y super admin)
-  const canViewOrders = () => {
-    return userData?.rol === 0 || userData?.rol === 1;
-  };
-
-  // Verificar si el admin puede ver configuraciones (siempre true para admin y super admin)
-  const canViewSettings = () => {
-    return userData?.rol === 0 || userData?.rol === 1;
-  };
-
   const renderContent = () => {
     switch(activeTab) {
       case 'users':
@@ -137,7 +78,6 @@ const HomeAdmin = () => {
         );
       
       case 'permissions':
-        // Solo visible para super admin (rol 0)
         if (userData?.rol === 0) {
           return (
             <PermissionManager 
@@ -155,91 +95,9 @@ const HomeAdmin = () => {
         );
       
       case 'orders':
-        if (!canViewOrders()) {
-          return (
-            <div className="admin-access-denied">
-              <FaShieldAlt size={48} />
-              <h3>Acceso Denegado</h3>
-              <p>No tienes permisos para ver los pedidos</p>
-            </div>
-          );
-        }
-        return (
-          <div className="admin-orders-container">
-            <h2 className="admin-section-title">Gestión de Pedidos</h2>
-            <div className="admin-orders-stats">
-              <div className="admin-stat-card">
-                <h3>Total Pedidos</h3>
-                <p>{orders.length}</p>
-              </div>
-              <div className="admin-stat-card">
-                <h3>Pendientes</h3>
-                <p>{orders.filter(o => o.estado === 'pendiente').length}</p>
-              </div>
-              <div className="admin-stat-card">
-                <h3>Completados</h3>
-                <p>{orders.filter(o => o.estado === 'completado').length}</p>
-              </div>
-              <div className="admin-stat-card">
-                <h3>Ingresos Totales</h3>
-                <p>${orders.reduce((sum, o) => sum + (o.total || 0), 0).toFixed(2)}</p>
-              </div>
-            </div>
-            
-            <div className="admin-orders-table-container">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Cliente</th>
-                    <th>Producto</th>
-                    <th>Cantidad</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.length === 0 ? (
-                    <tr>
-                      <td colSpan="7" className="admin-empty-row">No hay pedidos registrados</td>
-                    </tr>
-                  ) : (
-                    orders.map(order => (
-                      <tr key={order.id}>
-                        <td>#{order.id.toString().slice(-6)}</td>
-                        <td>{order.cliente}</td>
-                        <td>{order.producto}</td>
-                        <td>{order.cantidad}</td>
-                        <td>${(order.total || order.cantidad * order.precio).toFixed(2)}</td>
-                        <td>
-                          <span 
-                            className="admin-status-badge"
-                            style={{ backgroundColor: getStatusColor(order.estado) }}
-                          >
-                            {getStatusText(order.estado)}
-                          </span>
-                        </td>
-                        <td>{order.fecha}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
+        return <OrdersManager userRole={userData?.rol} />;
       
       case 'settings':
-        if (!canViewSettings()) {
-          return (
-            <div className="admin-access-denied">
-              <FaShieldAlt size={48} />
-              <h3>Acceso Denegado</h3>
-              <p>No tienes permisos para ver la configuración</p>
-            </div>
-          );
-        }
         return (
           <div className="admin-settings-container">
             <h2 className="admin-section-title">Configuración del Sistema</h2>
@@ -258,22 +116,6 @@ const HomeAdmin = () => {
                 <label>Total de usuarios:</label>
                 <span>{users.length}</span>
               </div>
-              <div className="admin-setting-item">
-                <label>Total de pedidos:</label>
-                <span>{orders.length}</span>
-              </div>
-              
-              {/* Mostrar permisos actuales si es admin */}
-              {userData?.rol === 1 && adminPermissions && (
-                <div className="admin-permissions-info">
-                  <h4>Tus permisos actuales:</h4>
-                  <ul>
-                    <li>✏️ Crear usuarios: {adminPermissions.createUsers?.enabled ? `Sí (${adminPermissions.createUsers.dailyLimit === 0 ? 'sin límite' : adminPermissions.createUsers.dailyLimit + ' por día'})` : 'No'}</li>
-                    <li>📝 Editar usuarios: {adminPermissions.editUsers?.enabled ? 'Sí' : 'No'}</li>
-                    <li>🗑️ Eliminar usuarios: {adminPermissions.deleteUsers?.enabled ? 'Sí' : 'No'}</li>
-                  </ul>
-                </div>
-              )}
               
               {userData?.rol === 0 && (
                 <div className="admin-setting-item">
@@ -282,7 +124,6 @@ const HomeAdmin = () => {
                     onClick={() => {
                       if (window.confirm('¿Estás seguro de limpiar todos los datos?')) {
                         localStorage.removeItem('orders');
-                        setOrders([]);
                         alert('Datos limpiados correctamente');
                       }
                     }}
@@ -342,7 +183,6 @@ const HomeAdmin = () => {
             Usuarios
           </button>
 
-          {/* Solo super admin puede ver gestión de permisos */}
           {userData?.rol === 0 && (
             <button 
               className={`admin-nav-btn ${activeTab === 'permissions' ? 'active' : ''}`}
@@ -353,27 +193,21 @@ const HomeAdmin = () => {
             </button>
           )}
 
-          {/* Mostrar pedidos - visible para admin y super admin */}
-          {canViewOrders() && (
-            <button 
-              className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
-              onClick={() => setActiveTab('orders')}
-            >
-              <FaClipboardList className="admin-nav-icon" />
-              Pedidos
-            </button>
-          )}
+          <button 
+            className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            <FaClipboardList className="admin-nav-icon" />
+            Pedidos
+          </button>
 
-          {/* Mostrar configuración - visible para admin y super admin */}
-          {canViewSettings() && (
-            <button 
-              className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
-              onClick={() => setActiveTab('settings')}
-            >
-              <FaCog className="admin-nav-icon" />
-              Configuración
-            </button>
-          )}
+          <button 
+            className={`admin-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+          >
+            <FaCog className="admin-nav-icon" />
+            Configuración
+          </button>
 
           <button 
             className="admin-nav-btn admin-logout"
@@ -393,15 +227,6 @@ const HomeAdmin = () => {
             </h2>
             
             <div className="admin-header-right">
-              {/* Mostrar estadísticas diarias si es admin */}
-              {userData?.rol === 1 && adminPermissions?.createUsers?.enabled && (
-                <div className="admin-daily-stats">
-                  <span className="stats-badge">
-                    📊 Creados hoy: {adminPermissions.createUsers.currentCount}/{adminPermissions.createUsers.dailyLimit === 0 ? '∞' : adminPermissions.createUsers.dailyLimit}
-                  </span>
-                </div>
-              )}
-              
               <button 
                 className="admin-logout-btn-header" 
                 onClick={handleLogout}
