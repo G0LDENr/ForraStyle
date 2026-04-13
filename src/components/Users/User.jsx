@@ -57,19 +57,6 @@ export function UserList({ currentAdminId, currentUserRole }) {
     return { adminId, userRole };
   }, [currentAdminId, currentUserRole]);
 
-  // Escuchar evento de actualización de permisos
-  useEffect(() => {
-    const handlePermissionsUpdated = () => {
-      console.log('🔄 Permisos actualizados, recargando...');
-      refreshStats();
-    };
-    
-    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
-    return () => {
-      window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
-    };
-  }, []);
-
   const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
     try {
       const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
@@ -95,6 +82,49 @@ export function UserList({ currentAdminId, currentUserRole }) {
       console.error('Error cargando permisos/estadisticas:', error);
     }
   }, []);
+
+  // DEFINIR refreshStats ANTES de usarlo en el useEffect
+  const refreshStats = useCallback(async () => {
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      
+      if (userRole === 1 && adminId) {
+        const stats = await UserController.getDailyStats(adminId, userRole);
+        setDailyStats(stats);
+        
+        const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
+        if (permissionsResult) {
+          setPermissions({
+            canCreate: permissionsResult.canCreate || false,
+            canEdit: permissionsResult.canEdit || false,
+            canDelete: permissionsResult.canDelete || false,
+            canEditAdmins: permissionsResult.canEditAdmins || false,
+            canDeleteAdmins: permissionsResult.canDeleteAdmins || false,
+            canDeleteSuperAdmin: permissionsResult.canDeleteSuperAdmin || false,
+            editDailyLimit: permissionsResult.editDailyLimit || 0,
+            currentEditCount: permissionsResult.currentEditCount || 0,
+            createDailyLimit: permissionsResult.dailyLimit || 0,
+            currentCreateCount: permissionsResult.currentDailyCount || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error refrescando estadisticas:', error);
+    }
+  }, [getAdminIdAndRole]);
+
+  // Escuchar evento de actualización de permisos (AHORA refreshStats ya está definida)
+  useEffect(() => {
+    const handlePermissionsUpdated = (event) => {
+      console.log('🔄 Permisos actualizados, recargando...', event.detail);
+      refreshStats();
+    };
+    
+    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
+    return () => {
+      window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
+    };
+  }, [refreshStats]);
 
   const loadAllData = useCallback(async () => {
     setLoading(true);
@@ -190,42 +220,10 @@ export function UserList({ currentAdminId, currentUserRole }) {
     }
   }, [getAdminIdAndRole]);
 
-  const refreshStats = useCallback(async () => {
-    try {
-      const { adminId, userRole } = getAdminIdAndRole();
-      
-      if (userRole === 1 && adminId) {
-        const stats = await UserController.getDailyStats(adminId, userRole);
-        setDailyStats(stats);
-        
-        const permissionsResult = await UserController.getUserPermissions(adminId, userRole);
-        if (permissionsResult) {
-          setPermissions({
-            canCreate: permissionsResult.canCreate || false,
-            canEdit: permissionsResult.canEdit || false,
-            canDelete: permissionsResult.canDelete || false,
-            canEditAdmins: permissionsResult.canEditAdmins || false,
-            canDeleteAdmins: permissionsResult.canDeleteAdmins || false,
-            canDeleteSuperAdmin: permissionsResult.canDeleteSuperAdmin || false,
-            editDailyLimit: permissionsResult.editDailyLimit || 0,
-            currentEditCount: permissionsResult.currentEditCount || 0,
-            createDailyLimit: permissionsResult.dailyLimit || 0,
-            currentCreateCount: permissionsResult.currentDailyCount || 0
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error refrescando estadisticas:', error);
-    }
-  }, [getAdminIdAndRole]);
-
-  // Función para verificar si puede crear (considerando límite 0 como infinito)
   const canCreateUser = useCallback(() => {
     if (currentUserRole === 0) return true;
     if (!permissions.canCreate) return false;
-    // Si el límite es 0, significa sin límite, siempre puede crear
     if (permissions.createDailyLimit === 0) return true;
-    // Si hay límite, verificar que no lo haya alcanzado
     return permissions.currentCreateCount < permissions.createDailyLimit;
   }, [currentUserRole, permissions.canCreate, permissions.createDailyLimit, permissions.currentCreateCount]);
 
@@ -234,7 +232,6 @@ export function UserList({ currentAdminId, currentUserRole }) {
     if (!permissions.canEdit) return false;
     if (user.rol === 0) return false;
     if (user.rol === 1 && !permissions.canEditAdmins) return false;
-    // Para edición, también considerar límite infinito
     if (permissions.editDailyLimit === 0) return true;
     return permissions.currentEditCount < permissions.editDailyLimit;
   }, [currentUserRole, permissions.canEdit, permissions.canEditAdmins, permissions.editDailyLimit, permissions.currentEditCount]);
