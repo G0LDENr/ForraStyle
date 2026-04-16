@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserList } from '../components/Users/User';
+import { OrderList } from '../components/Pedidos/Pedidos';
 import PermissionManager from '../components/Admin/PermissionManager';
-import { OrdersManager } from '../components/Pedidos/Pedidos';
 import { SettingsManager } from '../components/Settings/Settings';
 import { EarningsManager } from '../components/Admin/EarningsManager';
-import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaClipboardList, FaCog, FaShieldAlt, FaDollarSign } from 'react-icons/fa';
+import { UserController } from '../controllers/UserController';
+import { FaBars, FaTimes, FaUsers, FaUserCircle, FaSignOutAlt, FaCog, FaShieldAlt, FaDollarSign, FaShoppingCart } from 'react-icons/fa';
 import '../css/home/home-admin.css';
 
 const HomeAdmin = () => {
@@ -13,7 +14,6 @@ const HomeAdmin = () => {
   const [userData, setUserData] = useState(null);
   const [activeTab, setActiveTab] = useState('users');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -41,8 +41,7 @@ const HomeAdmin = () => {
       const userParsed = JSON.parse(user);
       console.log('User data from localStorage:', userParsed);
       setUserData(userParsed);
-      loadOrders();
-      loadUsers();
+      loadUsers(); // Cargar usuarios desde el controlador
     } catch (error) {
       console.error('Error parsing user data:', error);
       localStorage.removeItem('token');
@@ -52,17 +51,23 @@ const HomeAdmin = () => {
     }
   }, [navigate]);
 
-  const loadOrders = () => {
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    }
-  };
-
-  const loadUsers = () => {
-    const savedUsers = localStorage.getItem('users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
+  const loadUsers = async () => {
+    try {
+      // Obtener el usuario actual de localStorage
+      const user = JSON.parse(localStorage.getItem('user'));
+      const userRole = localStorage.getItem('userRole');
+      
+      // Llamar al controlador para obtener usuarios
+      const result = await UserController.getUsers(user?.id, parseInt(userRole));
+      
+      if (result.success) {
+        console.log('Usuarios cargados:', result.data);
+        setUsers(result.data);
+      } else {
+        console.error('Error cargando usuarios:', result.error);
+      }
+    } catch (error) {
+      console.error('Error en loadUsers:', error);
     }
   };
 
@@ -88,6 +93,14 @@ const HomeAdmin = () => {
           />
         );
       
+      case 'orders':
+        return (
+          <OrderList 
+            currentAdminId={userData?.id}
+            currentUserRole={userData?.rol}
+          />
+        );
+      
       case 'permissions':
         if (userData?.rol === 0) {
           return (
@@ -105,25 +118,26 @@ const HomeAdmin = () => {
           </div>
         );
       
-      case 'orders':
-        return <OrdersManager userRole={userData?.rol} />;
-      
       case 'earnings':
-        // Solo Super Admin ve esta sección en el menú
         if (userData?.rol === 0) {
-          return <EarningsManager currentUserId={userData?.id} />;
+          return <EarningsManager />;
         }
-        return null;
+        return (
+          <div className="admin-access-denied">
+            <FaDollarSign size={48} />
+            <h3>Acceso Denegado</h3>
+            <p>No tienes permisos para acceder a esta sección</p>
+          </div>
+        );
       
       case 'settings':
         return (
           <SettingsManager 
             userData={userData}
             users={users}
-            orders={orders}
           />
         );
-      
+
       default:
         return (
           <UserList 
@@ -173,6 +187,14 @@ const HomeAdmin = () => {
             Usuarios
           </button>
 
+          <button 
+            className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => setActiveTab('orders')}
+          >
+            <FaShoppingCart className="admin-nav-icon" />
+            Pedidos
+          </button>
+
           {userData?.rol === 0 && (
             <button 
               className={`admin-nav-btn ${activeTab === 'permissions' ? 'active' : ''}`}
@@ -182,14 +204,6 @@ const HomeAdmin = () => {
               Gestión de Permisos
             </button>
           )}
-
-          <button 
-            className={`admin-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            <FaClipboardList className="admin-nav-icon" />
-            Pedidos
-          </button>
 
           {/* Solo Super Admin ve Ganancias en el menú */}
           {userData?.rol === 0 && (

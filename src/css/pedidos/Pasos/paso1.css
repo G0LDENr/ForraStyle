@@ -1,0 +1,285 @@
+/* src/css/pedidos/Pasos/step1.css */
+
+.step1-personal-data {
+  padding: 0.5rem;
+}
+
+.step1-personal-data h3 {
+  color: #1e3a8a;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+}
+
+.step1-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Formulario */
+.step1-form-group {
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.step1-form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+}
+
+.step1-form-group label svg {
+  margin-right: 0.5rem;
+}
+
+.step1-form-group input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: white;
+  color: #1f2937;
+}
+
+.step1-form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.step1-form-group input::placeholder {
+  color: #9ca3af;
+}
+
+/* Autocomplete wrapper */
+.step1-autocomplete-wrapper {
+  position: relative;
+}
+
+/* Input de autocomplete */
+.step1-autocomplete-input {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: white;
+  color: #1f2937;
+}
+
+.step1-autocomplete-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.step1-autocomplete-input::placeholder {
+  color: #9ca3af;
+}
+
+/* Div editable - reemplaza al input normal */
+.step1-autocomplete-input-editable {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  cursor: text;
+  min-height: 42px;
+  max-height: 120px;
+  line-height: 1.5;
+  outline: none;
+  overflow-y: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  color: #1f2937;
+}
+
+.step1-autocomplete-input-editable:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Placeholder para div editable */
+.step1-autocomplete-input-editable:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+.step1-autocomplete-input-editable:focus:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+/* Ícono de búsqueda */
+.step1-search-icon {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Dropdown de autocompletado */
+.step1-autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Items del dropdown */
+.step1-autocomplete-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s;
+}
+
+.step1-autocomplete-item:hover {
+  background: #eff6ff;
+}
+
+.step1-autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.step1-autocomplete-item strong {
+  display: block;
+  color: #1e3a8a;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+.step1-autocomplete-item small {
+  display: block;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.step1-autocomplete-item span {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+}
+
+/* Mensaje vacío */
+.step1-autocomplete-empty {
+  padding: 0.75rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Advertencia de no usuarios */
+.step1-no-users-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.step1-no-users-warning p {
+  color: #92400e;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Badge de rol */
+.step1-user-role-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  background: #e5e7eb;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  color: #374151;
+}
+
+/* Checkbox y otros elementos */
+.step1-form-group.checkbox {
+  margin-top: 0.5rem;
+}
+
+.step1-form-group.checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.step1-form-group.checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Textarea */
+.step1-form-group textarea {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: white;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.step1-form-group textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Select */
+.step1-form-group select {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  background: white;
+  cursor: pointer;
+}
+
+.step1-form-group select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .step1-personal-data {
+    padding: 0;
+  }
+  
+  .step1-autocomplete-dropdown {
+    max-height: 200px;
+  }
+  
+  .step1-autocomplete-item {
+    padding: 0.5rem;
+  }
+}

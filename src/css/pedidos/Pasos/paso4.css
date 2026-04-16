@@ -1,0 +1,362 @@
+/* src/css/pedidos/Pasos/step4-payment.css */
+
+.step-payment {
+  padding: 0.5rem;
+}
+
+.step-payment h3 {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Tarjeta de información */
+.card-info-card {
+  background-color: #f8f6f6;
+  border-radius: 16px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  color: rgb(0, 0, 0);
+}
+
+.card-info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-info-header svg {
+  font-size: 1.25rem;
+}
+
+.card-info-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.card-info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card-number {
+  background-color: #e4e4e4;
+  padding: 0.75rem;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.card-number span {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-bottom: 0.25rem;
+}
+
+.card-number strong {
+  font-size: 1.25rem;
+  font-family: monospace;
+  letter-spacing: 2px;
+}
+
+.card-bank, .card-owner {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.card-bank span:first-child,
+.card-owner span:first-child {
+  opacity: 0.8;
+}
+
+/* Monto a pagar */
+.amount-to-pay {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.amount-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #166534;
+}
+
+.amount-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #059669;
+}
+
+/* Sección de subida de comprobante */
+.upload-section {
+  margin-bottom: 1.5rem;
+}
+
+.upload-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.upload-header svg {
+  color: #3b82f6;
+}
+
+.upload-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1f2937;
+}
+
+.upload-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #f9fafb;
+}
+
+.upload-area:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.upload-area svg {
+  font-size: 2rem;
+  color: #3b82f6;
+}
+
+.upload-area span {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.upload-area small {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+/* Archivo subido */
+.uploaded-file {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.file-info svg {
+  font-size: 1.5rem;
+  color: #059669;
+}
+
+.file-details strong {
+  display: block;
+  font-size: 0.875rem;
+  color: #1f2937;
+}
+
+.file-details small {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.remove-file {
+  background: #fee2e2;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: #dc2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.remove-file:hover {
+  background: #fecaca;
+}
+
+/* Instrucciones */
+.payment-instructions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.instruction-item {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.instruction-item svg {
+  font-size: 1rem;
+  color: #3b82f6;
+  margin-top: 0.125rem;
+}
+
+.instruction-item strong {
+  display: block;
+  font-size: 0.75rem;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.instruction-item small {
+  font-size: 0.65rem;
+  color: #6b7280;
+}
+
+/* Completado */
+.payment-completed {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #dbeafe;
+  border-radius: 8px;
+  color: #1e40af;
+  font-size: 0.875rem;
+}
+
+.payment-completed svg {
+  font-size: 1rem;
+}
+
+/* Agrega esto a tu paso4.css */
+
+/* Desglose del pago */
+.amount-breakdown {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.breakdown-title {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.breakdown-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0 0.5rem;
+  margin-top: 0.5rem;
+  border-top: 2px solid #e5e7eb;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.breakdown-total strong {
+  font-size: 1.25rem;
+  color: #059669;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 0.25rem;
+}
+
+.required-text {
+  color: #ef4444 !important;
+  font-size: 0.65rem !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card-bank, .card-owner {
+    flex-direction: column;
+  }
+  
+  .amount-to-pay {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .payment-instructions {
+    flex-direction: column;
+  }
+  
+  .uploaded-file {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .file-info {
+    flex-direction: column;
+  }
+  
+  .card-number strong {
+    font-size: 1rem;
+    word-break: break-all;
+  }
+}

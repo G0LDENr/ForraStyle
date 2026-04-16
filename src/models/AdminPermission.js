@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase'
 
 export const AdminPermissionModel = {
-  // Obtener permisos por admin_id
+  // ==================== MÉTODOS EXISTENTES PARA USUARIOS ====================
+  
   async getByAdminId(adminId) {
     try {
       const { data, error } = await supabase
@@ -22,12 +23,12 @@ export const AdminPermissionModel = {
     }
   },
 
-  // Crear permisos por defecto
   async createDefault(adminId) {
     const today = new Date().toISOString().split('T')[0];
     
     const newPermission = {
       admin_id: adminId,
+      // Permisos de usuarios
       can_create_users: false,
       create_daily_limit: 0,
       create_current_count: 0,
@@ -40,7 +41,18 @@ export const AdminPermissionModel = {
       can_delete_users: false,
       can_delete_admins: false,
       can_delete_super_admin: false,
-      user_edit_counts: {}
+      // Permisos de pedidos (nuevos)
+      can_create_orders: false,
+      order_daily_limit: 0,
+      order_current_count: 0,
+      order_last_reset: today,
+      can_edit_orders: false,
+      order_edit_daily_limit: 0,
+      order_edit_current_count: 0,
+      order_edit_last_reset: today,
+      can_edit_all_orders: false,
+      can_delete_orders: false,
+      can_delete_all_orders: false
     };
 
     const { data, error } = await supabase
@@ -52,11 +64,11 @@ export const AdminPermissionModel = {
     return data[0];
   },
 
-  // Actualizar permisos
   async update(adminId, permissions) {
     const { data, error } = await supabase
       .from('admin_permissions')
       .update({
+        // Usuarios
         can_create_users: permissions.canCreateUsers,
         create_daily_limit: permissions.createDailyLimit,
         can_edit_users: permissions.canEditUsers,
@@ -65,6 +77,14 @@ export const AdminPermissionModel = {
         can_delete_users: permissions.canDeleteUsers,
         can_delete_admins: permissions.canDeleteAdmins,
         can_delete_super_admin: permissions.canDeleteSuperAdmin,
+        // Pedidos
+        can_create_orders: permissions.canCreateOrders,
+        order_daily_limit: permissions.orderDailyLimit,
+        can_edit_orders: permissions.canEditOrders,
+        order_edit_daily_limit: permissions.orderEditDailyLimit,
+        can_edit_all_orders: permissions.canEditAllOrders,
+        can_delete_orders: permissions.canDeleteOrders,
+        can_delete_all_orders: permissions.canDeleteAllOrders,
         updated_at: new Date()
       })
       .eq('admin_id', adminId)
@@ -74,62 +94,8 @@ export const AdminPermissionModel = {
     return data[0];
   },
 
-  // Verificar si puede editar usuario (límite POR USUARIO)
-  async canEditUser(adminId, targetUserId, targetUserRole) {
-    const permissions = await this.getByAdminId(adminId);
-    if (!permissions.can_edit_users) return false;
-    
-    const today = new Date().toISOString().split('T')[0];
-    let userEditCounts = permissions.user_edit_counts || {};
-    
-    // Limpiar registros de días anteriores
-    const keys = Object.keys(userEditCounts);
-    keys.forEach(key => {
-      if (!key.startsWith(today)) {
-        delete userEditCounts[key];
-      }
-    });
-    
-    // Obtener cuántas veces ha editado este usuario hoy
-    const userEditCount = userEditCounts[`${today}_${targetUserId}`] || 0;
-    
-    // Si ya alcanzó el límite para este usuario, no puede editar
-    if (permissions.edit_daily_limit > 0 && userEditCount >= permissions.edit_daily_limit) {
-      return false;
-    }
-    
-    if (targetUserRole === 0) return false;
-    if (targetUserRole === 1 && !permissions.can_edit_admins) return false;
-    
-    return true;
-  },
+  // ==================== MÉTODOS PARA USUARIOS ====================
 
-  // Registrar edición de usuario
-  async registerUserEdit(adminId, targetUserId) {
-    const permissions = await this.getByAdminId(adminId);
-    const today = new Date().toISOString().split('T')[0];
-    
-    let userEditCounts = permissions.user_edit_counts || {};
-    const key = `${today}_${targetUserId}`;
-    
-    userEditCounts[key] = (userEditCounts[key] || 0) + 1;
-    
-    // Limpiar registros antiguos (mantener solo últimos 7 días)
-    const keys = Object.keys(userEditCounts);
-    if (keys.length > 7) {
-      const oldestKey = keys.sort()[0];
-      delete userEditCounts[oldestKey];
-    }
-    
-    const { error } = await supabase
-      .from('admin_permissions')
-      .update({ user_edit_counts: userEditCounts })
-      .eq('admin_id', adminId);
-    
-    if (error) throw error;
-  },
-
-  // Verificar si puede crear usuario
   async canCreateUser(adminId) {
     const permissions = await this.getByAdminId(adminId);
     if (!permissions.can_create_users) return false;
@@ -137,10 +103,8 @@ export const AdminPermissionModel = {
     const today = new Date().toISOString().split('T')[0];
     let currentCount = permissions.create_current_count;
     
-    // Resetear contador si es un nuevo día
     if (permissions.create_last_reset !== today) {
       currentCount = 0;
-      // Actualizar el contador en la base de datos
       await supabase
         .from('admin_permissions')
         .update({
@@ -150,20 +114,14 @@ export const AdminPermissionModel = {
         .eq('admin_id', adminId);
     }
     
-    // Si el límite es 0, significa sin límite, siempre puede crear
     if (permissions.create_daily_limit === 0) return true;
-    
-    // Si hay límite, verificar que no lo haya alcanzado
     return currentCount < permissions.create_daily_limit;
   },
 
-  // Registrar creación de usuario
   async incrementCreateCount(adminId) {
     const today = new Date().toISOString().split('T')[0];
     const permissions = await this.getByAdminId(adminId);
     
-    // Siempre incrementar el contador, incluso si el límite es 0
-    // Esto es para llevar estadísticas
     let newCount = permissions.create_current_count;
     if (permissions.create_last_reset !== today) {
       newCount = 1;
@@ -182,7 +140,46 @@ export const AdminPermissionModel = {
     if (error) throw error;
   },
 
-  // Verificar si puede eliminar usuario
+  async canEditUser(adminId, targetUserId, targetUserRole) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_edit_users) return false;
+    
+    if (targetUserRole === 0) return false;
+    if (targetUserRole === 1 && !permissions.can_edit_admins) return false;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let currentCount = permissions.edit_current_count;
+    
+    if (permissions.edit_last_reset !== today) {
+      currentCount = 0;
+    }
+    
+    if (permissions.edit_daily_limit === 0) return true;
+    return currentCount < permissions.edit_daily_limit;
+  },
+
+  async registerUserEdit(adminId) {
+    const today = new Date().toISOString().split('T')[0];
+    const permissions = await this.getByAdminId(adminId);
+    
+    let newCount = permissions.edit_current_count;
+    if (permissions.edit_last_reset !== today) {
+      newCount = 1;
+    } else {
+      newCount = permissions.edit_current_count + 1;
+    }
+
+    const { error } = await supabase
+      .from('admin_permissions')
+      .update({
+        edit_current_count: newCount,
+        edit_last_reset: today
+      })
+      .eq('admin_id', adminId);
+    
+    if (error) throw error;
+  },
+
   async canDeleteUser(adminId, targetUserRole) {
     const permissions = await this.getByAdminId(adminId);
     if (!permissions.can_delete_users) return false;
@@ -193,7 +190,6 @@ export const AdminPermissionModel = {
     return true;
   },
 
-  // Obtener estadísticas diarias de creación
   async getDailyCreationStats(adminId) {
     const permissions = await this.getByAdminId(adminId);
     if (!permissions.can_create_users) return null;
@@ -208,26 +204,20 @@ export const AdminPermissionModel = {
     return { used, limit: permissions.create_daily_limit };
   },
 
-  // Obtener estadísticas de edición (cuántos usuarios diferentes ha editado)
   async getDailyEditStats(adminId) {
     const permissions = await this.getByAdminId(adminId);
     if (!permissions.can_edit_users) return null;
     
     const today = new Date().toISOString().split('T')[0];
-    const userEditCounts = permissions.user_edit_counts || {};
+    let used = permissions.edit_current_count;
     
-    // Contar cuántos usuarios diferentes ha editado hoy
-    let editedUsersCount = 0;
-    Object.keys(userEditCounts).forEach(key => {
-      if (key.startsWith(today)) {
-        editedUsersCount++;
-      }
-    });
+    if (permissions.edit_last_reset !== today) {
+      used = 0;
+    }
     
-    return { used: editedUsersCount, limit: permissions.edit_daily_limit };
+    return { used, limit: permissions.edit_daily_limit };
   },
 
-  // Obtener permisos formateados para el frontend
   async getUserPermissions(adminId) {
     try {
       const permissions = await this.getByAdminId(adminId);
@@ -247,6 +237,12 @@ export const AdminPermissionModel = {
         };
       }
       
+      const today = new Date().toISOString().split('T')[0];
+      let currentEditCount = permissions.edit_current_count;
+      if (permissions.edit_last_reset !== today) {
+        currentEditCount = 0;
+      }
+      
       return {
         canCreate: permissions.can_create_users || false,
         canEdit: permissions.can_edit_users || false,
@@ -257,7 +253,7 @@ export const AdminPermissionModel = {
         canDeleteAdmins: permissions.can_delete_admins || false,
         canDeleteSuperAdmin: permissions.can_delete_super_admin || false,
         editDailyLimit: permissions.edit_daily_limit || 0,
-        currentEditCount: permissions.edit_current_count || 0
+        currentEditCount: currentEditCount
       };
     } catch (error) {
       console.error('Error en getUserPermissions:', error);
@@ -265,15 +261,178 @@ export const AdminPermissionModel = {
     }
   },
 
-  // Eliminar permisos
-  async delete(adminId) {
+  // ==================== NUEVOS MÉTODOS PARA PEDIDOS ====================
+
+  async canCreateOrder(adminId) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_create_orders) return false;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let currentCount = permissions.order_current_count;
+    
+    if (permissions.order_last_reset !== today) {
+      currentCount = 0;
+      await supabase
+        .from('admin_permissions')
+        .update({
+          order_current_count: 0,
+          order_last_reset: today
+        })
+        .eq('admin_id', adminId);
+    }
+    
+    if (permissions.order_daily_limit === 0) return true;
+    return currentCount < permissions.order_daily_limit;
+  },
+
+  async incrementOrderCreateCount(adminId) {
+    const today = new Date().toISOString().split('T')[0];
+    const permissions = await this.getByAdminId(adminId);
+    
+    let newCount = permissions.order_current_count;
+    if (permissions.order_last_reset !== today) {
+      newCount = 1;
+    } else {
+      newCount = permissions.order_current_count + 1;
+    }
+
     const { error } = await supabase
       .from('admin_permissions')
-      .delete()
+      .update({
+        order_current_count: newCount,
+        order_last_reset: today
+      })
       .eq('admin_id', adminId);
     
     if (error) throw error;
-    return true;
+  },
+
+  async canEditOrder(adminId, orderCreatorId) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_edit_orders) return false;
+    
+    // Si puede editar todos los pedidos
+    if (permissions.can_edit_all_orders) {
+      const today = new Date().toISOString().split('T')[0];
+      let currentCount = permissions.order_edit_current_count;
+      
+      if (permissions.order_edit_last_reset !== today) {
+        currentCount = 0;
+      }
+      
+      if (permissions.order_edit_daily_limit === 0) return true;
+      return currentCount < permissions.order_edit_daily_limit;
+    }
+    
+    // Solo puede editar sus propios pedidos
+    if (orderCreatorId !== adminId) return false;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let currentCount = permissions.order_edit_current_count;
+    
+    if (permissions.order_edit_last_reset !== today) {
+      currentCount = 0;
+    }
+    
+    if (permissions.order_edit_daily_limit === 0) return true;
+    return currentCount < permissions.order_edit_daily_limit;
+  },
+
+  async registerOrderEdit(adminId) {
+    const today = new Date().toISOString().split('T')[0];
+    const permissions = await this.getByAdminId(adminId);
+    
+    let newCount = permissions.order_edit_current_count;
+    if (permissions.order_edit_last_reset !== today) {
+      newCount = 1;
+    } else {
+      newCount = permissions.order_edit_current_count + 1;
+    }
+
+    const { error } = await supabase
+      .from('admin_permissions')
+      .update({
+        order_edit_current_count: newCount,
+        order_edit_last_reset: today
+      })
+      .eq('admin_id', adminId);
+    
+    if (error) throw error;
+  },
+
+  async canDeleteOrder(adminId, orderCreatorId) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_delete_orders) return false;
+    
+    if (permissions.can_delete_all_orders) return true;
+    
+    // Solo puede eliminar sus propios pedidos
+    return orderCreatorId === adminId;
+  },
+
+  async getDailyOrderCreationStats(adminId) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_create_orders) return null;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let used = permissions.order_current_count;
+    
+    if (permissions.order_last_reset !== today) {
+      used = 0;
+    }
+    
+    return { used, limit: permissions.order_daily_limit };
+  },
+
+  async getDailyOrderEditStats(adminId) {
+    const permissions = await this.getByAdminId(adminId);
+    if (!permissions.can_edit_orders) return null;
+    
+    const today = new Date().toISOString().split('T')[0];
+    let used = permissions.order_edit_current_count;
+    
+    if (permissions.order_edit_last_reset !== today) {
+      used = 0;
+    }
+    
+    return { used, limit: permissions.order_edit_daily_limit };
+  },
+
+  async getOrderPermissions(adminId) {
+    try {
+      const permissions = await this.getByAdminId(adminId);
+      
+      if (!permissions) {
+        return {
+          canCreate: false,
+          canEdit: false,
+          canDelete: false,
+          dailyLimit: 0,
+          currentDailyCount: 0,
+          editDailyLimit: 0,
+          currentEditCount: 0
+        };
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      let currentEditCount = permissions.order_edit_current_count;
+      if (permissions.order_edit_last_reset !== today) {
+        currentEditCount = 0;
+      }
+      
+      return {
+        canCreate: permissions.can_create_orders || false,
+        canEdit: permissions.can_edit_orders || false,
+        canDelete: permissions.can_delete_orders || false,
+        dailyLimit: permissions.order_daily_limit || 0,
+        currentDailyCount: permissions.order_current_count || 0,
+        editDailyLimit: permissions.order_edit_daily_limit || 0,
+        currentEditCount: currentEditCount
+      };
+    } catch (error) {
+      console.error('Error en getOrderPermissions:', error);
+      return null;
+    }
   },
 
   async resetCounters(adminId) {
@@ -287,7 +446,10 @@ export const AdminPermissionModel = {
           create_last_reset: today,
           edit_current_count: 0,
           edit_last_reset: today,
-          user_edit_counts: {}
+          order_current_count: 0,
+          order_last_reset: today,
+          order_edit_current_count: 0,
+          order_edit_last_reset: today
         })
         .eq('admin_id', adminId)
         .select();
@@ -298,6 +460,15 @@ export const AdminPermissionModel = {
       console.error('Error en resetCounters:', error);
       throw error;
     }
-  }
+  },
 
+  async delete(adminId) {
+    const { error } = await supabase
+      .from('admin_permissions')
+      .delete()
+      .eq('admin_id', adminId);
+    
+    if (error) throw error;
+    return true;
+  }
 };

@@ -1,0 +1,42 @@
+.profile-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.profile-info {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 30px;
+  margin-top: 20px;
+}
+
+.avatar {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #3b82f6;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.info-row label {
+  font-weight: 600;
+  color: #374151;
+}
+
+.info-row p {
+  color: #6b7280;
+}
+
+.badge {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+}

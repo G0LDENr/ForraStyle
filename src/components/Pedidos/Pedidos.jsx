@@ -1,82 +1,297 @@
-import React, { useState, useEffect } from 'react';
-import { FaBoxOpen, FaMoneyBillWave, FaClipboardList, FaCheckCircle, FaTimesCircle, FaHourglassHalf, FaSync } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from 'react';
+import { OrderController } from '../../controllers/OrdenesController';
+import { CreateOrderModal } from './Create-Pedidos';
+import { EditOrderModal } from './Edit-Pedidos';
+import { ViewOrderModal } from './View-Pedidos';
+import { FaSpinner, FaCheckCircle, FaShoppingCart, FaExclamationTriangle, FaSync, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
 import '../../css/pedidos/pedidos.css';
 
-export function OrdersManager({ userRole }) {
+export function OrderList({ currentAdminId, currentUserRole }) {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter] = useState('todos');
+  const [error, setError] = useState(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('todos');
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(10);
+  const [dailyStats, setDailyStats] = useState(null);
+  const [permissions, setPermissions] = useState({
+    canCreate: false,
+    canEdit: false,
+    canDelete: false,
+    dailyLimit: 0,
+    currentDailyCount: 0,
+    editDailyLimit: 0,
+    currentEditCount: 0
+  });
 
-  useEffect(() => {
-    loadOrders();
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showPermissionDenied, setShowPermissionDenied] = useState(false);
+  const [permissionError, setPermissionError] = useState('');
+  
+  const initialLoadDone = React.useRef(false);
+
+  const getAdminIdAndRole = useCallback(() => {
+    let adminId = currentAdminId;
+    let userRole = currentUserRole;
+    
+    if (!adminId || userRole === undefined) {
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        adminId = user.id;
+        userRole = user.rol;
+      }
+    }
+    
+    return { adminId, userRole };
+  }, [currentAdminId, currentUserRole]);
+
+  const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
+    try {
+      const permissionsResult = await OrderController.getOrderPermissions(adminId, userRole);
+      if (permissionsResult) {
+        setPermissions({
+          canCreate: permissionsResult.canCreate || false,
+          canEdit: permissionsResult.canEdit || false,
+          canDelete: permissionsResult.canDelete || false,
+          dailyLimit: permissionsResult.dailyLimit || 0,
+          currentDailyCount: permissionsResult.currentDailyCount || 0,
+          editDailyLimit: permissionsResult.editDailyLimit || 0,
+          currentEditCount: permissionsResult.currentEditCount || 0
+        });
+      }
+      
+      if (userRole === 1) {
+        const stats = await OrderController.getDailyOrderStats(adminId, userRole);
+        setDailyStats(stats);
+      }
+    } catch (error) {
+      console.error('Error cargando permisos/estadisticas:', error);
+    }
   }, []);
 
-  const loadOrders = () => {
-    const savedOrders = localStorage.getItem('orders');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
+  const refreshStats = useCallback(async () => {
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      
+      if (userRole === 1 && adminId) {
+        const stats = await OrderController.getDailyOrderStats(adminId, userRole);
+        setDailyStats(stats);
+        
+        const permissionsResult = await OrderController.getOrderPermissions(adminId, userRole);
+        if (permissionsResult) {
+          setPermissions({
+            canCreate: permissionsResult.canCreate || false,
+            canEdit: permissionsResult.canEdit || false,
+            canDelete: permissionsResult.canDelete || false,
+            dailyLimit: permissionsResult.dailyLimit || 0,
+            currentDailyCount: permissionsResult.currentDailyCount || 0,
+            editDailyLimit: permissionsResult.editDailyLimit || 0,
+            currentEditCount: permissionsResult.currentEditCount || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error refrescando estadisticas:', error);
     }
-    setLoading(false);
-  };
+  }, [getAdminIdAndRole]);
 
-  const handleRefresh = () => {
+  useEffect(() => {
+    const handlePermissionsUpdated = (event) => {
+      console.log('🔄 Permisos actualizados, recargando...', event.detail);
+      refreshStats();
+    };
+    
+    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
+    return () => {
+      window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
+    };
+  }, [refreshStats]);
+
+  const loadAllData = useCallback(async () => {
+    setLoading(true);
+    
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      
+      const ordersResult = await OrderController.getOrders(adminId, userRole);
+      if (ordersResult.success) {
+        setOrders(ordersResult.data);
+      } else {
+        setError(ordersResult.error);
+      }
+      
+      await loadPermissionsAndStats(adminId, userRole);
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Error al cargar los datos');
+    } finally {
+      setLoading(false);
+    }
+  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+
+  useEffect(() => {
+    if (!initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadAllData();
+    }
+  }, [loadAllData]);
+
+  const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    loadOrders();
-    setTimeout(() => setRefreshing(false), 500);
-  };
-
-  const updateOrderStatus = (orderId, newStatus) => {
-    const updatedOrders = orders.map(order => 
-      order.id === orderId ? { ...order, estado: newStatus } : order
-    );
-    setOrders(updatedOrders);
-    localStorage.setItem('orders', JSON.stringify(updatedOrders));
-  };
-
-  const getStatusColor = (estado) => {
-    switch(estado) {
-      case 'pendiente': return 'pedidos-status-pending';
-      case 'completado': return 'pedidos-status-completed';
-      case 'cancelado': return 'pedidos-status-cancelled';
-      default: return 'pedidos-status-default';
+    
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      
+      const ordersResult = await OrderController.getOrders(adminId, userRole);
+      if (ordersResult.success) {
+        setOrders(ordersResult.data);
+      }
+      
+      await loadPermissionsAndStats(adminId, userRole);
+    } catch (error) {
+      console.error('Error refrescando:', error);
+      setPermissionError('Error al refrescar los datos');
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+    } finally {
+      setRefreshing(false);
     }
+  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+
+  const refreshOrders = useCallback(async () => {
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      const result = await OrderController.getOrders(adminId, userRole);
+      if (result.success) {
+        setOrders(result.data);
+      }
+    } catch (error) {
+      console.error('Error refrescando pedidos:', error);
+    }
+  }, [getAdminIdAndRole]);
+
+  const canCreateOrder = useCallback(() => {
+    if (currentUserRole === 0) return true;
+    if (!permissions.canCreate) return false;
+    if (permissions.dailyLimit === 0) return true;
+    return permissions.currentDailyCount < permissions.dailyLimit;
+  }, [currentUserRole, permissions.canCreate, permissions.dailyLimit, permissions.currentDailyCount]);
+
+  const canEditOrder = useCallback((order) => {
+    if (currentUserRole === 0) return true;
+    if (!permissions.canEdit) return false;
+    if (order.created_by !== currentAdminId) return false;
+    if (permissions.editDailyLimit === 0) return true;
+    return permissions.currentEditCount < permissions.editDailyLimit;
+  }, [currentUserRole, permissions.canEdit, permissions.editDailyLimit, permissions.currentEditCount, currentAdminId]);
+
+  const canDeleteOrder = useCallback((order) => {
+    if (currentUserRole === 0) return true;
+    if (!permissions.canDelete) return false;
+    return order.created_by === currentAdminId;
+  }, [currentUserRole, permissions.canDelete, currentAdminId]);
+
+  const handleDeleteClick = (order) => {
+    setOrderToDelete(order);
+    setShowConfirmModal(true);
   };
 
-  const getStatusIcon = (estado) => {
-    switch(estado) {
-      case 'pendiente': return <FaHourglassHalf />;
-      case 'completado': return <FaCheckCircle />;
-      case 'cancelado': return <FaTimesCircle />;
-      default: return <FaClipboardList />;
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    
+    const { adminId, userRole } = getAdminIdAndRole();
+    
+    const result = await OrderController.deleteOrder(orderToDelete.id, adminId, userRole);
+    if (result.success) {
+      setSuccessMessage('Pedido eliminado exitosamente');
+      setShowConfirmModal(false);
+      setShowSuccessModal(true);
+      await refreshOrders();
+      await refreshStats();
+      setTimeout(() => setShowSuccessModal(false), 2000);
+    } else {
+      setPermissionError(result.error);
+      setShowPermissionDenied(true);
+      setShowConfirmModal(false);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
     }
+    setDeleteLoading(false);
+    setOrderToDelete(null);
   };
 
-  const getStatusText = (estado) => {
-    switch(estado) {
-      case 'pendiente': return 'Pendiente';
-      case 'completado': return 'Completado';
-      case 'cancelado': return 'Cancelado';
-      default: return estado;
+  const handleEdit = (order) => {
+    setSelectedOrder(order);
+    setIsEditModalOpen(true);
+  };
+
+  const handleView = (order) => {
+    setSelectedOrder(order);
+    setIsViewModalOpen(true);
+  };
+
+  const handleCreateClick = () => {
+    if (!canCreateOrder()) {
+      let errorMsg = 'No tienes permiso para crear pedidos';
+      if (permissions.dailyLimit > 0 && permissions.currentDailyCount >= permissions.dailyLimit) {
+        errorMsg = `Límite de creación alcanzado. Solo puedes crear ${permissions.dailyLimit} pedidos por día`;
+      } else if (!permissions.canCreate) {
+        errorMsg = 'No tienes permiso para crear pedidos';
+      }
+      setPermissionError(errorMsg);
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+      return;
     }
+    setIsCreateModalOpen(true);
+  };
+
+  const handleOrderCreated = async () => {
+    await refreshOrders();
+    await refreshStats();
+  };
+
+  const handleOrderUpdated = async () => {
+    await refreshOrders();
+    await refreshStats();
+  };
+
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      'pendiente': 'pedidos-status-pending',
+      'en_proceso': 'pedidos-status-processing',
+      'enviado': 'pedidos-status-shipped',
+      'entregado': 'pedidos-status-delivered',
+      'cancelado': 'pedidos-status-cancelled'
+    };
+    const statusText = {
+      'pendiente': 'Pendiente',
+      'en_proceso': 'En Proceso',
+      'enviado': 'Enviado',
+      'entregado': 'Entregado',
+      'cancelado': 'Cancelado'
+    };
+    return <span className={`pedidos-order-status-badge ${statusMap[status] || 'pedidos-status-pending'}`}>{statusText[status] || status}</span>;
   };
 
   const filteredOrders = orders.filter(order => {
     const searchLower = searchTerm.toLowerCase();
-    const matchesSearch = 
-      order.cliente?.toLowerCase().includes(searchLower) || 
-      order.producto?.toLowerCase().includes(searchLower) ||
-      order.id?.toString().includes(searchLower);
-    
-    let matchesFilter = true;
-    if (filter !== 'todos') {
-      matchesFilter = order.estado === filter;
-    }
-    
-    return matchesSearch && matchesFilter;
+    const matchesSearch = order.customer_name?.toLowerCase().includes(searchLower) || 
+                          order.customer_email?.toLowerCase().includes(searchLower) ||
+                          order.order_number?.toLowerCase().includes(searchLower);
+    let matchesStatus = true;
+    if (statusFilter !== 'todos') matchesStatus = order.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   const indexOfLastOrder = currentPage * ordersPerPage;
@@ -87,20 +302,34 @@ export function OrdersManager({ userRole }) {
   const nextPage = () => { if (currentPage < totalPages) setCurrentPage(currentPage + 1); };
   const prevPage = () => { if (currentPage > 1) setCurrentPage(currentPage - 1); };
   const handleSearch = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
+  const handleStatusFilter = (status) => { setStatusFilter(status); setCurrentPage(1); };
 
-  const stats = {
-    total: orders.length,
-    pendientes: orders.filter(o => o.estado === 'pendiente').length,
-    completados: orders.filter(o => o.estado === 'completado').length,
-    cancelados: orders.filter(o => o.estado === 'cancelado').length,
-    ingresos: orders.reduce((sum, o) => sum + (o.total || 0), 0)
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
   };
 
   if (loading) {
     return (
       <div className="pedidos-loading">
-        <div className="pedidos-spinner"></div>
-        <p>Cargando pedidos...</p>
+        <FaSpinner className="pedidos-spinner" /> Cargando pedidos...
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="pedidos-error">
+        <FaExclamationTriangle />
+        <span>Error: {error}</span>
+        <button onClick={() => { initialLoadDone.current = false; loadAllData(); }} className="pedidos-retry-btn">
+          Reintentar
+        </button>
       </div>
     );
   }
@@ -108,72 +337,35 @@ export function OrdersManager({ userRole }) {
   return (
     <div className="pedidos-container">
       <div className="pedidos-header">
-        <h2 className="pedidos-title">
-          <FaClipboardList className="pedidos-title-icon" />
-          Gestión de Pedidos
-        </h2>
+        <h2 className="pedidos-title"><FaShoppingCart className="pedidos-title-icon" /> Gestión de Pedidos</h2>
       </div>
 
-      {/* Estadisticas */}
-      <div className="pedidos-stats">
-        <div className="pedidos-stat-card pedidos-stat-total">
-          <div className="pedidos-stat-icon"><FaBoxOpen /></div>
-          <div className="pedidos-stat-info">
-            <h3>Total Pedidos</h3>
-            <p>{stats.total}</p>
-          </div>
+      {showPermissionDenied && (
+        <div className="pedidos-permission-denied">
+          <FaExclamationTriangle />
+          <span>{permissionError}</span>
         </div>
-        <div className="pedidos-stat-card pedidos-stat-pending">
-          <div className="pedidos-stat-icon"><FaHourglassHalf /></div>
-          <div className="pedidos-stat-info">
-            <h3>Pendientes</h3>
-            <p>{stats.pendientes}</p>
-          </div>
-        </div>
-        <div className="pedidos-stat-card pedidos-stat-completed">
-          <div className="pedidos-stat-icon"><FaCheckCircle /></div>
-          <div className="pedidos-stat-info">
-            <h3>Completados</h3>
-            <p>{stats.completados}</p>
-          </div>
-        </div>
-        <div className="pedidos-stat-card pedidos-stat-cancelled">
-          <div className="pedidos-stat-icon"><FaTimesCircle /></div>
-          <div className="pedidos-stat-info">
-            <h3>Cancelados</h3>
-            <p>{stats.cancelados}</p>
-          </div>
-        </div>
-        <div className="pedidos-stat-card pedidos-stat-income">
-          <div className="pedidos-stat-icon"><FaMoneyBillWave /></div>
-          <div className="pedidos-stat-info">
-            <h3>Ingresos Totales</h3>
-            <p>${stats.ingresos.toFixed(2)}</p>
-          </div>
-        </div>
-      </div>
+      )}
 
-      {/* Barra de busqueda y filtros */}
+      {successMessage && !showSuccessModal && (
+        <div className="pedidos-success-message">
+          <FaCheckCircle />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       <div className="pedidos-search-bar">
         <div className="pedidos-search-wrapper">
-          <input 
-            type="text" 
-            placeholder="Buscar por cliente, producto o ID..." 
-            value={searchTerm} 
-            onChange={handleSearch} 
-            className="pedidos-search-input" 
-          />
+          <input type="text" placeholder="Buscar por cliente, email o número de pedido..." value={searchTerm} onChange={handleSearch} className="pedidos-search-input" />
         </div>
-        <div className="pedidos-filter-wrapper">
-          <select 
-            value={filter} 
-            onChange={(e) => { setFilter(e.target.value); setCurrentPage(1); }} 
-            className="pedidos-filter-select"
-          >
+        <div className="pedidos-status-filter-wrapper">
+          <select value={statusFilter} onChange={(e) => handleStatusFilter(e.target.value)} className="pedidos-status-filter-select">
             <option value="todos">Todos los estados</option>
-            <option value="pendiente">Pendientes</option>
-            <option value="completado">Completados</option>
-            <option value="cancelado">Cancelados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En Proceso</option>
+            <option value="enviado">Enviado</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
           </select>
         </div>
         <div className="pedidos-actions">
@@ -185,88 +377,156 @@ export function OrdersManager({ userRole }) {
           >
             <FaSync className={refreshing ? 'pedidos-spinning' : ''} /> {refreshing ? 'Actualizando...' : 'Actualizar'}
           </button>
+          {dailyStats && permissions.canCreate && (
+            <div className="pedidos-daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? 'Sin límite' : dailyStats.limit}`}>
+              Creados hoy: {dailyStats.used} / {dailyStats.limit === 0 ? 'Sin límite' : dailyStats.limit}
+            </div>
+          )}
+          {permissions.canCreate && (
+            <button onClick={handleCreateClick} className="pedidos-create-btn">
+              + Crear Pedido
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Tabla de pedidos */}
-      <div className="pedidos-table-container">
+      <div className="pedidos-table-wrapper">
         <table className="pedidos-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>#</th>
+              <th>Núm. Pedido</th>
               <th>Cliente</th>
-              <th>Producto</th>
-              <th>Cantidad</th>
               <th>Total</th>
               <th>Estado</th>
               <th>Fecha</th>
-              {userRole === 0 && <th>Acciones</th>}
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {currentOrders.length === 0 ? (
-              <tr>
-                <td colSpan={userRole === 0 ? 8 : 7} className="pedidos-empty-row">
-                  No hay pedidos registrados
-                </td>
-              </tr>
-            ) : (
-              currentOrders.map(order => (
+            {currentOrders.map((order, index) => {
+              const canEdit = canEditOrder(order);
+              const canDelete = canDeleteOrder(order);
+              
+              return (
                 <tr key={order.id}>
-                  <td>#{order.id.toString().slice(-6)}</td>
-                  <td>{order.cliente || 'N/A'}</td>
-                  <td>{order.producto || 'N/A'}</td>
-                  <td>{order.cantidad || 0}</td>
-                  <td>${(order.total || order.cantidad * order.precio || 0).toFixed(2)}</td>
+                  <td>{indexOfFirstOrder + index + 1}</td>
+                  <td className="pedidos-order-number">{order.order_number || `ORD-${order.id}`}</td>
                   <td>
-                    <span className={`pedidos-status-badge ${getStatusColor(order.estado)}`}>
-                      {getStatusIcon(order.estado)}
-                      {getStatusText(order.estado)}
-                    </span>
+                    <div className="pedidos-customer-info">
+                      <strong>{order.customer_name}</strong>
+                      <small>{order.customer_email}</small>
+                    </div>
                   </td>
-                  <td>{order.fecha || new Date().toLocaleDateString()}</td>
-                  {userRole === 0 && (
-                    <td className="pedidos-actions-cell">
-                      <select
-                        value={order.estado}
-                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                        className="pedidos-status-select"
-                      >
-                        <option value="pendiente">Pendiente</option>
-                        <option value="completado">Completado</option>
-                        <option value="cancelado">Cancelado</option>
-                      </select>
-                    </td>
-                  )}
+                  <td className="pedidos-order-total">{formatCurrency(order.total)}</td>
+                  <td>{getStatusBadge(order.status)}</td>
+                  <td>{formatDate(order.created_at)}</td>
+                  <td className="pedidos-actions-cell">
+                    <button 
+                      onClick={() => handleView(order)} 
+                      className="pedidos-view-btn"
+                      title="Ver detalles"
+                    >
+                      <FaEye /> Ver
+                    </button>
+                    <button 
+                      onClick={() => handleEdit(order)} 
+                      className={`pedidos-edit-btn ${!canEdit ? 'pedidos-disabled-btn' : ''}`}
+                      disabled={!canEdit}
+                      title="Editar"
+                    >
+                      <FaEdit /> Editar
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(order)} 
+                      className={`pedidos-delete-btn ${!canDelete ? 'pedidos-disabled-btn' : ''}`}
+                      disabled={!canDelete}
+                      title="Eliminar"
+                    >
+                      <FaTrash /> Eliminar
+                    </button>
+                  </td>
                 </tr>
-              ))
-            )}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {filteredOrders.length === 0 && searchTerm && (
-        <div className="pedidos-no-results">
-          <p>No se encontraron pedidos para "{searchTerm}"</p>
+      {filteredOrders.length === 0 && (
+        <div className="pedidos-empty">
+          <p>No se encontraron pedidos</p>
         </div>
       )}
 
-      {/* Paginacion */}
       {filteredOrders.length > ordersPerPage && (
         <div className="pedidos-pagination">
           <div className="pedidos-pagination-info">
             Mostrando {indexOfFirstOrder + 1} - {Math.min(indexOfLastOrder, filteredOrders.length)} de {filteredOrders.length} pedidos
           </div>
           <div className="pedidos-pagination-controls">
-            <button onClick={prevPage} disabled={currentPage === 1} className="pedidos-pagination-btn">
-              Anterior
-            </button>
-            <span className="pedidos-pagination-current">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button onClick={nextPage} disabled={currentPage === totalPages} className="pedidos-pagination-btn">
-              Siguiente
-            </button>
+            <button onClick={prevPage} disabled={currentPage === 1} className="pedidos-pagination-btn">Anterior</button>
+            <span className="pedidos-pagination-current">Página {currentPage} de {totalPages}</span>
+            <button onClick={nextPage} disabled={currentPage === totalPages} className="pedidos-pagination-btn">Siguiente</button>
+          </div>
+        </div>
+      )}
+
+      <CreateOrderModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        onOrderCreated={handleOrderCreated} 
+        currentUserRole={currentUserRole} 
+        currentAdminId={currentAdminId}
+      />
+      
+      <EditOrderModal 
+        isOpen={isEditModalOpen} 
+        onClose={() => { 
+          setIsEditModalOpen(false); 
+          setSelectedOrder(null); 
+        }} 
+        onOrderUpdated={handleOrderUpdated} 
+        order={selectedOrder} 
+        currentUserRole={currentUserRole}
+        currentAdminId={currentAdminId}
+      />
+
+      <ViewOrderModal 
+        isOpen={isViewModalOpen} 
+        onClose={() => { 
+          setIsViewModalOpen(false); 
+          setSelectedOrder(null); 
+        }} 
+        order={selectedOrder} 
+      />
+
+      {showConfirmModal && (
+        <div className="pedidos-modal-overlay" onClick={() => setShowConfirmModal(false)}>
+          <div className="pedidos-modal-container" onClick={(e) => e.stopPropagation()}>
+            <div className="pedidos-modal-header"><h3>Confirmar Eliminación</h3></div>
+            <div className="pedidos-modal-body">
+              <p>¿Estás seguro de que deseas eliminar este pedido?</p>
+              <p className="pedidos-modal-item"><strong>{orderToDelete?.order_number || `Pedido #${orderToDelete?.id}`}</strong></p>
+              <p className="pedidos-modal-item">Cliente: {orderToDelete?.customer_name}</p>
+              <p className="pedidos-modal-warning">Esta acción no se puede deshacer.</p>
+            </div>
+            <div className="pedidos-modal-footer">
+              <button className="pedidos-modal-cancel" onClick={() => setShowConfirmModal(false)}>Cancelar</button>
+              <button className="pedidos-modal-confirm" onClick={handleDeleteConfirm} disabled={deleteLoading}>
+                {deleteLoading ? <><FaSpinner className="pedidos-spinner" /> Eliminando...</> : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSuccessModal && (
+        <div className="pedidos-success-overlay">
+          <div className="pedidos-success-container">
+            <div className="pedidos-success-icon"><FaCheckCircle /></div>
+            <h3>Éxito</h3>
+            <p>{successMessage}</p>
           </div>
         </div>
       )}

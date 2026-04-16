@@ -1,85 +1,64 @@
-/* src/css/home/home.css */
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
 .home-app {
   min-height: 100vh;
-  background: #f5f7fa;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f3f4f6;
 }
 
-/* ============================================
-   NAVBAR SUPERIOR CON LOGO IZQUIERDA
-   ============================================ */
 .navbar {
   background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: fixed;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
   z-index: 100;
 }
 
 .nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
+  height: 70px;
 }
 
-/* Logo y nombre a la izquierda */
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 10px;
 }
 
 .logo-img {
-  width: 40px;
   height: 40px;
-  object-fit: contain;
+  width: auto;
 }
 
 .logo-text {
-  color: #1e3a8a;
-  font-size: 1.3rem;
+  font-size: 1.5rem;
   font-weight: bold;
-  margin: 0;
+  color: #1e3a8a;
 }
 
-/* Menú de navegación a la derecha */
 .nav-menu {
   display: flex;
-  gap: 1.5rem;
-  align-items: center;
-  flex-wrap: wrap;
+  gap: 20px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  gap: 8px;
   background: none;
   border: none;
-  border-radius: 0.375rem;
   cursor: pointer;
-  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
   color: #4b5563;
-  transition: all 0.3s;
-  font-weight: 500;
+  transition: all 0.2s;
 }
 
 .nav-link:hover {
-  background: #eff6ff;
-  color: #3b82f6;
+  background: #f3f4f6;
 }
 
 .nav-link.active {
@@ -93,416 +72,26 @@
 
 .nav-link.logout:hover {
   background: #fee2e2;
-  color: #dc2626;
 }
 
-/* ============================================
-   CONTENIDO PRINCIPAL
-   ============================================ */
 .main-content {
-  margin-top: 80px;
-  padding: 2rem;
-  max-width: 1400px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .content-header {
-  margin-bottom: 2rem;
+  margin-bottom: 20px;
 }
 
 .content-header h1 {
+  font-size: 1.8rem;
   color: #1e3a8a;
-  font-size: 1.5rem;
-  font-weight: 600;
 }
 
 .content-body {
   background: white;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
+  border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-/* ============================================
-   PEDIDOS - CONTAINER
-   ============================================ */
-.orders-container {
-  width: 100%;
-}
-
-.orders-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-/* Botones */
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-primary:hover {
-  background: #2563eb;
-}
-
-.btn-success {
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-success:hover {
-  background: #059669;
-}
-
-.btn-secondary {
-  background: #6b7280;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-secondary:hover {
-  background: #4b5563;
-}
-
-/* Formulario */
-.order-form-container {
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1.5rem;
-  margin-bottom: 2rem;
-  border: 1px solid #e5e7eb;
-}
-
-.order-form-container h3 {
-  color: #1e3a8a;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.order-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.form-group label {
-  font-weight: 500;
-  color: #374151;
-  font-size: 0.875rem;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.form-total {
-  text-align: right;
-  font-size: 1rem;
-  padding: 0.5rem;
-  background: #eff6ff;
-  border-radius: 0.375rem;
-  color: #1e3a8a;
-  font-weight: bold;
-}
-
-.form-actions {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-/* Filtros */
-.orders-filters {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.search-box {
-  flex: 1;
-  max-width: 300px;
-}
-
-.search-box input {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.filter-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.filter-buttons button {
-  padding: 0.375rem 0.75rem;
-  border: 1px solid #d1d5db;
-  background: white;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.filter-buttons button:hover {
-  background: #f3f4f6;
-}
-
-.filter-buttons button.active {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-}
-
-/* Tabla */
-.orders-table {
-  overflow-x: auto;
-}
-
-.orders-table table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.orders-table thead {
-  background: #f9fafb;
-}
-
-.orders-table th {
-  text-align: left;
-  padding: 0.75rem;
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.875rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.orders-table td {
-  padding: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.actions {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.action-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.25rem;
-  transition: all 0.2s;
-  font-size: 1rem;
-}
-
-.action-btn.edit {
-  color: #3b82f6;
-}
-
-.action-btn.delete {
-  color: #ef4444;
-}
-
-/* Perfil */
-.profile-container h2 {
-  color: #1e3a8a;
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
-}
-
-.profile-info {
-  max-width: 500px;
-}
-
-.avatar {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #3b82f6;
-}
-
-.info-row {
-  display: flex;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.info-row label {
-  width: 150px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.info-row p {
-  color: #6b7280;
-}
-
-.badge {
-  background: #3b82f6;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  display: inline-block;
-  font-size: 0.75rem;
-}
-
-/* Estados vacíos */
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  color: #9ca3af;
-}
-
-.empty-state h3 {
-  margin: 1rem 0 0.5rem;
-  color: #6b7280;
-}
-
-/* Configuración */
-.settings-container h2 {
-  color: #1e3a8a;
-  margin-bottom: 1rem;
-  font-size: 1.25rem;
-}
-
-.settings-option {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.settings-option label {
-  width: 120px;
-  font-weight: 500;
-  color: #374151;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .nav-container {
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .nav-menu {
-    justify-content: center;
-  }
-}
-
-@media (max-width: 768px) {
-  .nav-menu {
-    gap: 0.5rem;
-  }
-  
-  .nav-link {
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  .main-content {
-    padding: 1rem;
-    margin-top: 100px;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .orders-filters {
-    flex-direction: column;
-  }
-  
-  .search-box {
-    max-width: 100%;
-  }
-  
-  .info-row {
-    flex-direction: column;
-  }
-  
-  .info-row label {
-    width: 100%;
-  }
-  
-  .logo-img {
-    width: 30px;
-    height: 30px;
-  }
-  
-  .logo-text {
-    font-size: 1rem;
-  }
+  min-height: calc(100vh - 160px);
 }
