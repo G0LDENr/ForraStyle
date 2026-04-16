@@ -1,60 +1,137 @@
+/* src/css/admin/permission-manager.css */
+
+/* Contenedor principal */
 .permission-manager {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
+  padding: 1.5rem;
+  background: #f9fafb;
+  min-height: 100vh;
 }
 
-/* Título - Mismo estilo que UserList */
+/* Header */
 .permission-header {
-  margin-bottom: 24px;
+  margin-bottom: 1.5rem;
 }
 
 .permission-title {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 0;
+  gap: 0.75rem;
   font-size: 1.5rem;
   font-weight: 600;
   color: #1e3a8a;
+  margin: 0;
 }
 
 .permission-title-icon {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   color: #3b82f6;
+}
+
+/* Tabs */
+.permission-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  background: white;
+  padding: 0 1rem;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.tab-btn:hover {
+  color: #3b82f6;
+  background: #eff6ff;
+}
+
+.tab-btn.active {
+  color: #3b82f6;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3b82f6;
+}
+
+/* Mensajes */
+.permission-message {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  animation: slideIn 0.3s ease;
+}
+
+.permission-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+
+.permission-message.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-left: 4px solid #f59e0b;
+}
+
+.permission-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border-left: 4px solid #ef4444;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Barra de búsqueda */
 .permission-search-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .search-wrapper {
   flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  max-width: 400px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  color: #9ca3af;
-  pointer-events: none;
+  min-width: 250px;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px 12px 10px 38px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.3s;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: white;
 }
 
 .search-input:focus {
@@ -66,16 +143,16 @@
 .refresh-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
   background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s;
-  white-space: nowrap;
+  transition: all 0.2s;
 }
 
 .refresh-btn:hover {
@@ -85,107 +162,124 @@
 
 /* Tabla */
 .permission-table-container {
+  background: white;
+  border-radius: 0.75rem;
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .permission-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 800px;
+  font-size: 0.875rem;
 }
 
-.permission-table thead tr {
-  background: #f3f4f6;
-  border-bottom: 2px solid #e5e7eb;
+.permission-table thead {
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .permission-table th {
-  padding: 12px;
   text-align: left;
+  padding: 1rem;
   font-weight: 600;
   color: #374151;
-  font-size: 13px;
 }
 
 .permission-table td {
-  padding: 12px;
+  padding: 1rem;
   border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
   vertical-align: middle;
 }
 
-.permission-table tr:hover {
+.permission-table tbody tr:hover {
   background: #f9fafb;
 }
 
-/* Nombre del administrador - SIN NEGRITA */
-.permission-table td:first-child strong {
+/* Badge de usuario actual */
+.current-user-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
   font-weight: normal;
 }
 
-.current-user-badge {
-  display: inline-block;
-  background: #10b981;
-  color: white;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 8px;
-}
-
-/* Estados de permisos */
+/* Estado de permisos */
 .permission-status {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .permission-enabled {
-  color: #10b981;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.375rem;
+  color: #059669;
   font-weight: 500;
-  flex-wrap: wrap;
+}
+
+.permission-enabled svg {
+  font-size: 0.875rem;
 }
 
 .permission-enabled small {
-  font-size: 10px;
-  color: #6b7280;
+  display: block;
+  font-size: 0.7rem;
   font-weight: normal;
+  color: #6b7280;
+  margin-top: 0.125rem;
 }
 
 .permission-disabled {
-  color: #ef4444;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.375rem;
+  color: #dc2626;
+  font-weight: 500;
 }
 
-/* Botón de editar */
+/* Botón editar permisos */
 .edit-permissions-btn {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
   background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
-.edit-permissions-btn:hover {
+.edit-permissions-btn:hover:not(.disabled-btn) {
   background: #2563eb;
   transform: translateY(-1px);
 }
 
-/* Información de paginación - SIN BORDE ARRIBA */
+.edit-permissions-btn.disabled-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #9ca3af;
+}
+
+.edit-permissions-btn.disabled-btn:hover {
+  transform: none;
+}
+
+/* Paginación */
 .permission-pagination-info {
+  margin-top: 1rem;
   text-align: center;
-  margin-top: 20px;
-  padding-top: 15px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #6b7280;
 }
 
@@ -193,17 +287,19 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
-  margin-top: 15px;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .pagination-btn {
-  padding: 6px 12px;
+  padding: 0.5rem 1rem;
   background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 6px;
+  color: #374151;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
 }
 
 .pagination-btn:hover:not(:disabled) {
@@ -216,128 +312,180 @@
 }
 
 .pagination-current {
-  font-size: 14px;
-  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
 }
 
-/* Mensajes */
-.permission-message {
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  animation: slideDown 0.3s ease;
-}
-
-.permission-message.success {
-  background: #d1fae5;
-  color: #065f46;
-  border-left: 4px solid #10b981;
-}
-
-/* Estados de carga y error */
-.spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.permission-loading, .permission-error {
-  text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 12px;
-}
-
-.retry-btn {
-  margin-top: 15px;
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.retry-btn:hover {
-  background: #2563eb;
-}
-
-/* Sin datos */
+/* Estados vacíos */
 .no-admins {
   text-align: center;
-  padding: 60px 20px;
-  color: #6b7280;
+  padding: 3rem;
+  color: #9ca3af;
 }
 
 .no-admins-hint {
-  font-size: 12px;
-  margin-top: 10px;
-  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+/* Loading y error */
+.permission-loading,
+.permission-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.permission-loading {
+  color: #3b82f6;
+}
+
+.permission-error {
+  color: #ef4444;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
 }
 
 /* Acceso denegado */
 .permission-denied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
   text-align: center;
-  padding: 60px 20px;
-  background: white;
-  border-radius: 12px;
+  padding: 2rem;
 }
 
 .permission-denied svg {
   color: #ef4444;
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
 }
 
-/* Animaciones */
-@keyframes slideDown {
-  from {
-    transform: translateY(-20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.permission-denied h3 {
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+}
+
+.permission-denied p {
+  color: #6b7280;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .permission-manager {
-    padding: 16px;
+    padding: 1rem;
   }
   
-  .permission-title {
-    font-size: 1.2rem;
+  .permission-table th,
+  .permission-table td {
+    padding: 0.75rem;
   }
-  
-  .permission-title-icon {
-    font-size: 1.2rem;
-  }
-  
+}
+
+@media (max-width: 768px) {
   .permission-search-bar {
     flex-direction: column;
-    align-items: stretch;
   }
   
   .search-wrapper {
-    max-width: 100%;
+    width: 100%;
   }
   
   .refresh-btn {
+    width: 100%;
     justify-content: center;
   }
   
-  .permission-table td {
-    padding: 10px;
+  .permission-table thead {
+    display: none;
+  }
+  
+  .permission-table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    background: white;
+  }
+  
+  .permission-table tbody tr td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .permission-table tbody tr td:last-child {
+    border-bottom: none;
+  }
+  
+  .permission-table tbody tr td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #374151;
+    margin-right: 1rem;
+  }
+  
+  .permission-status {
+    align-items: flex-end;
+    text-align: right;
+  }
+  
+  .edit-permissions-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .permission-tabs {
+    padding: 0 0.5rem;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .permission-title {
+    font-size: 1.25rem;
+  }
+  
+  .permission-title-icon {
+    font-size: 1.5rem;
+  }
+  
+  .tab-btn {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.7rem;
+  }
+  
+  .tab-btn svg {
+    font-size: 0.75rem;
   }
 }

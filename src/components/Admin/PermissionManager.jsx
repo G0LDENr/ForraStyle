@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserController } from '../../controllers/UserController';
+import { OrderController } from '../../controllers/OrdenesController';
 import EditPermissionsModal from './Edit-Permissions';
-import { FaUserShield, FaSync, FaCheck, FaTimes, FaEdit, FaSpinner } from 'react-icons/fa';
+import { FaUserShield, FaSync, FaCheck, FaTimes, FaEdit, FaSpinner, FaShoppingCart } from 'react-icons/fa';
 import '../../css/admin/permission-manager.css';
 
 const PermissionManager = ({ currentUserRole, currentUserId }) => {
@@ -13,12 +14,20 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [activeTab, setActiveTab] = useState('users');
   
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState(null);
 
-  // Función para convertir cualquier valor a booleano
+  const canEditAdminPermissions = useCallback(() => {
+    return currentUserRole === 0;
+  }, [currentUserRole]);
+
+  const canViewPanel = useCallback(() => {
+    return currentUserRole === 0;
+  }, [currentUserRole]);
+
   const toBoolean = useCallback((value) => {
     if (value === true || value === false) return value;
     if (value === 1 || value === 0) return value === 1;
@@ -45,45 +54,60 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
           adminUsers.map(async (admin) => {
             console.log(`\n📌 Procesando admin: ${admin.name} (ID: ${admin.id})`);
             
-            const permissions = await UserController.getUserPermissions(admin.id, currentUserRole);
-            console.log(`🔐 Permisos recibidos para ${admin.name}:`, permissions);
+            const userPermissions = await UserController.getUserPermissions(admin.id, currentUserRole);
+            console.log(`🔐 Permisos de usuarios para ${admin.name}:`, userPermissions);
             
-            if (!permissions) {
-              console.log(`⚠️ No se encontraron permisos para ${admin.name}, usando valores por defecto`);
-              const normalizedPermissions = {
-                createUsers: { enabled: false, dailyLimit: 0 },
-                editUsers: { enabled: false, dailyLimit: 0, canEditAdmins: false },
-                deleteUsers: { enabled: false, canDeleteAdmins: false, canDeleteSuperAdmin: false }
-              };
-              
-              return {
-                ...admin,
-                permissions: normalizedPermissions
-              };
-            }
+            const orderPermissionsResult = await OrderController.getAdminOrderPermissions(admin.id, currentUserRole);
+            const orderPermissions = orderPermissionsResult.success ? orderPermissionsResult.data : {};
+            console.log(`📦 Permisos de pedidos para ${admin.name}:`, orderPermissions);
             
-            const normalizedPermissions = {
+            const normalizedUserPermissions = {
               createUsers: { 
-                enabled: toBoolean(permissions.canCreate), 
-                dailyLimit: permissions.dailyLimit || 0,
+                enabled: toBoolean(userPermissions?.canCreate), 
+                dailyLimit: userPermissions?.dailyLimit || 0,
               },
               editUsers: { 
-                enabled: toBoolean(permissions.canEdit), 
-                dailyLimit: permissions.editDailyLimit || 0,
-                canEditAdmins: toBoolean(permissions.canEditAdmins)
+                enabled: toBoolean(userPermissions?.canEdit), 
+                dailyLimit: userPermissions?.editDailyLimit || 0,
+                canEditAdmins: toBoolean(userPermissions?.canEditAdmins)
               },
               deleteUsers: { 
-                enabled: toBoolean(permissions.canDelete),
-                canDeleteAdmins: toBoolean(permissions.canDeleteAdmins),
-                canDeleteSuperAdmin: toBoolean(permissions.canDeleteSuperAdmin)
+                enabled: toBoolean(userPermissions?.canDelete),
+                canDeleteAdmins: toBoolean(userPermissions?.canDeleteAdmins),
+                canDeleteSuperAdmin: toBoolean(userPermissions?.canDeleteSuperAdmin)
               }
             };
             
-            console.log(`✅ Permisos normalizados para ${admin.name}:`, normalizedPermissions);
+            const normalizedOrderPermissions = {
+              createOrders: {
+                enabled: toBoolean(orderPermissions.canCreateOrders),
+                dailyLimit: orderPermissions.orderDailyLimit || 0,
+              },
+              editOrders: {
+                enabled: toBoolean(orderPermissions.canEditOrders),
+                dailyLimit: orderPermissions.orderEditDailyLimit || 0,
+                canEditAllOrders: toBoolean(orderPermissions.canEditAllOrders)
+              },
+              deleteOrders: {
+                enabled: toBoolean(orderPermissions.canDeleteOrders),
+                canDeleteAllOrders: toBoolean(orderPermissions.canDeleteAllOrders)
+              }
+            };
+            
+            const allPermissions = {
+              ...normalizedUserPermissions,
+              ...normalizedOrderPermissions
+            };
+            
+            console.log(`✅ Permisos normalizados para ${admin.name}:`, allPermissions);
             
             return {
               ...admin,
-              permissions: normalizedPermissions
+              permissions: allPermissions,
+              currentCounts: {
+                orderCurrentCount: orderPermissions.orderCurrentCount || 0,
+                orderEditCurrentCount: orderPermissions.orderEditCurrentCount || 0
+              }
             };
           })
         );
@@ -134,11 +158,20 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   };
 
   const handleEditClick = (admin) => {
+    if (!canEditAdminPermissions()) {
+      setMessage(`⚠️ No tienes permisos para editar los permisos de ${admin.name}`);
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+    
     setSelectedAdmin(admin);
     setSelectedPermissions({
       createUsers: { ...admin.permissions.createUsers },
       editUsers: { ...admin.permissions.editUsers },
-      deleteUsers: { ...admin.permissions.deleteUsers }
+      deleteUsers: { ...admin.permissions.deleteUsers },
+      createOrders: { ...admin.permissions.createOrders },
+      editOrders: { ...admin.permissions.editOrders },
+      deleteOrders: { ...admin.permissions.deleteOrders }
     });
     setIsEditModalOpen(true);
   };
@@ -146,8 +179,14 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const handleSavePermissions = async (newPermissions) => {
     if (!selectedAdmin) return;
     
+    if (!canEditAdminPermissions()) {
+      setMessage(`⚠️ No tienes permisos para modificar los permisos de ${selectedAdmin.name}`);
+      setTimeout(() => setMessage(''), 3000);
+      return;
+    }
+    
     try {
-      const result = await UserController.updateAdminPermissions(
+      const userResult = await UserController.updateAdminPermissions(
         selectedAdmin.id,
         {
           canCreateUsers: Boolean(newPermissions.createUsers.enabled),
@@ -162,14 +201,28 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         currentUserRole
       );
       
-      if (result.success) {
+      const orderResult = await OrderController.updateOrderPermissions(
+        selectedAdmin.id,
+        {
+          canCreateOrders: Boolean(newPermissions.createOrders.enabled),
+          orderDailyLimit: newPermissions.createOrders.dailyLimit || 0,
+          canEditOrders: Boolean(newPermissions.editOrders.enabled),
+          orderEditDailyLimit: newPermissions.editOrders.dailyLimit || 0,
+          canEditAllOrders: Boolean(newPermissions.editOrders.canEditAllOrders),
+          canDeleteOrders: Boolean(newPermissions.deleteOrders.enabled),
+          canDeleteAllOrders: Boolean(newPermissions.deleteOrders.canDeleteAllOrders)
+        },
+        currentUserRole
+      );
+      
+      if (userResult.success && orderResult.success) {
         setMessage(`✅ Permisos de ${selectedAdmin.name} guardados exitosamente`);
         await loadAdmins();
         setIsEditModalOpen(false);
         setSelectedAdmin(null);
         setSelectedPermissions(null);
       } else {
-        setMessage(`❌ Error: ${result.error}`);
+        setMessage(`❌ Error: ${userResult.error || orderResult.error}`);
       }
       
       setTimeout(() => setMessage(''), 3000);
@@ -193,12 +246,12 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  if (currentUserRole !== 0) {
+  if (!canViewPanel()) {
     return (
       <div className="permission-denied">
         <FaUserShield size={48} />
         <h3>Acceso Denegado</h3>
-        <p>No tienes permisos para acceder a esta sección</p>
+        <p>Solo el Super Administrador puede gestionar permisos</p>
       </div>
     );
   }
@@ -232,7 +285,26 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         </h2>
       </div>
       
-      {message && <div className="permission-message success">{message}</div>}
+      <div className="permission-tabs">
+        <button 
+          className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
+          onClick={() => setActiveTab('users')}
+        >
+          👥 Permisos de Usuarios
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('orders')}
+        >
+          <FaShoppingCart /> Permisos de Pedidos
+        </button>
+      </div>
+      
+      {message && (
+        <div className={`permission-message ${message.includes('✅') ? 'success' : message.includes('⚠️') ? 'warning' : 'error'}`}>
+          {message}
+        </div>
+      )}
       
       <div className="permission-search-bar">
         <div className="search-wrapper">
@@ -255,93 +327,174 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
             <tr>
               <th>Administrador</th>
               <th>Email</th>
-              <th>Crear Usuarios</th>
-              <th>Editar Usuarios</th>
-              <th>Eliminar Usuarios</th>
+              {activeTab === 'users' ? (
+                <>
+                  <th>Crear Usuarios</th>
+                  <th>Editar Usuarios</th>
+                  <th>Eliminar Usuarios</th>
+                </>
+              ) : (
+                <>
+                  <th>Crear Pedidos</th>
+                  <th>Editar Pedidos</th>
+                  <th>Eliminar Pedidos</th>
+                </>
+              )}
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {currentAdmins.map(admin => (
-              <tr key={admin.id}>
-                <td data-label="Administrador">
-                  <strong>{admin.name}</strong>
-                  {admin.id === currentUserId && (
-                    <span className="current-user-badge">(Tú)</span>
+            {currentAdmins.map(admin => {
+              const canEdit = canEditAdminPermissions();
+              
+              return (
+                <tr key={admin.id}>
+                  <td data-label="Administrador">
+                    <strong>{admin.name}</strong>
+                    {admin.id === currentUserId && (
+                      <span className="current-user-badge">(Tú)</span>
+                    )}
+                  </td>
+                  <td data-label="Email">{admin.email}</td>
+                  
+                  {activeTab === 'users' ? (
+                    <>
+                      <td data-label="Crear Usuarios">
+                        <div className="permission-status">
+                          {admin.permissions.createUsers?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.createUsers.dailyLimit > 0 && (
+                                <small>({admin.permissions.createUsers.dailyLimit} por día)</small>
+                              )}
+                              {admin.permissions.createUsers.dailyLimit === 0 && (
+                                <small>(sin límite)</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Editar Usuarios">
+                        <div className="permission-status">
+                          {admin.permissions.editUsers?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.editUsers.dailyLimit > 0 && (
+                                <small>({admin.permissions.editUsers.dailyLimit} por día)</small>
+                              )}
+                              {admin.permissions.editUsers.canEditAdmins && (
+                                <small>(incluye admins)</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Eliminar Usuarios">
+                        <div className="permission-status">
+                          {admin.permissions.deleteUsers?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.deleteUsers.canDeleteAdmins && (
+                                <small>(incluye admins)</small>
+                              )}
+                              {admin.permissions.deleteUsers.canDeleteSuperAdmin && (
+                                <small>(incluye Super Admin)</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td data-label="Crear Pedidos">
+                        <div className="permission-status">
+                          {admin.permissions.createOrders?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.createOrders.dailyLimit > 0 && (
+                                <small>({admin.permissions.createOrders.dailyLimit} por día)</small>
+                              )}
+                              {admin.permissions.createOrders.dailyLimit === 0 && (
+                                <small>(sin límite)</small>
+                              )}
+                              {admin.currentCounts?.orderCurrentCount > 0 && (
+                                <small className="count-badge">📊 Hoy: {admin.currentCounts.orderCurrentCount}</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Editar Pedidos">
+                        <div className="permission-status">
+                          {admin.permissions.editOrders?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.editOrders.dailyLimit > 0 && (
+                                <small>({admin.permissions.editOrders.dailyLimit} por día)</small>
+                              )}
+                              {admin.permissions.editOrders.canEditAllOrders && (
+                                <small>(todos los pedidos)</small>
+                              )}
+                              {admin.currentCounts?.orderEditCurrentCount > 0 && (
+                                <small className="count-badge">✏️ Hoy: {admin.currentCounts.orderEditCurrentCount}</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td data-label="Eliminar Pedidos">
+                        <div className="permission-status">
+                          {admin.permissions.deleteOrders?.enabled ? (
+                            <span className="permission-enabled">
+                              <FaCheck /> Sí
+                              {admin.permissions.deleteOrders.canDeleteAllOrders && (
+                                <small>(todos los pedidos)</small>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="permission-disabled">
+                              <FaTimes /> No
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </>
                   )}
-                </td>
-                <td data-label="Email">{admin.email}</td>
-                
-                <td data-label="Crear Usuarios">
-                  <div className="permission-status">
-                    {admin.permissions.createUsers.enabled ? (
-                      <span className="permission-enabled">
-                        <FaCheck /> Sí
-                        {admin.permissions.createUsers.dailyLimit > 0 && (
-                          <small>({admin.permissions.createUsers.dailyLimit} por día)</small>
-                        )}
-                        {admin.permissions.createUsers.dailyLimit === 0 && (
-                          <small>(sin límite)</small>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="permission-disabled">
-                        <FaTimes /> No
-                      </span>
-                    )}
-                  </div>
-                </td>
-                
-                <td data-label="Editar Usuarios">
-                  <div className="permission-status">
-                    {admin.permissions.editUsers.enabled ? (
-                      <span className="permission-enabled">
-                        <FaCheck /> Sí
-                        {admin.permissions.editUsers.dailyLimit > 0 && (
-                          <small>({admin.permissions.editUsers.dailyLimit} por día)</small>
-                        )}
-                        {admin.permissions.editUsers.canEditAdmins && (
-                          <small>(incluye admins)</small>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="permission-disabled">
-                        <FaTimes /> No
-                      </span>
-                    )}
-                  </div>
-                </td>
-                
-                <td data-label="Eliminar Usuarios">
-                  <div className="permission-status">
-                    {admin.permissions.deleteUsers.enabled ? (
-                      <span className="permission-enabled">
-                        <FaCheck /> Sí
-                        {admin.permissions.deleteUsers.canDeleteAdmins && (
-                          <small>(incluye admins)</small>
-                        )}
-                        {admin.permissions.deleteUsers.canDeleteSuperAdmin && (
-                          <small>(incluye Super Admin)</small>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="permission-disabled">
-                        <FaTimes /> No
-                      </span>
-                    )}
-                  </div>
-                </td>
-                
-                <td data-label="Acciones">
-                  <button 
-                    className="edit-permissions-btn"
-                    onClick={() => handleEditClick(admin)}
-                  >
-                    <FaEdit /> Editar Permisos
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  
+                  <td data-label="Acciones">
+                    <button 
+                      className={`edit-permissions-btn ${!canEdit ? 'disabled-btn' : ''}`}
+                      onClick={() => handleEditClick(admin)}
+                      disabled={!canEdit}
+                      title={!canEdit ? 'Solo el Super Admin puede editar permisos' : 'Editar permisos'}
+                    >
+                      <FaEdit /> Editar Permisos
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         

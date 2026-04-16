@@ -3,7 +3,7 @@ import { OrderController } from '../../controllers/OrdenesController';
 import { CreateOrderModal } from './Create-Pedidos';
 import { EditOrderModal } from './Edit-Pedidos';
 import { ViewOrderModal } from './View-Pedidos';
-import { FaSpinner, FaCheckCircle, FaShoppingCart, FaExclamationTriangle, FaSync, FaEye, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaSpinner, FaCheckCircle, FaShoppingCart, FaExclamationTriangle, FaSync, FaEye, FaEdit, FaTrash, FaClipboardList, FaClock, FaTruck, FaCheckDouble, FaChartLine } from 'react-icons/fa';
 import '../../css/pedidos/pedidos.css';
 
 export function OrderList({ currentAdminId, currentUserRole }) {
@@ -266,6 +266,21 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     await refreshStats();
   };
 
+  // Calcular estadísticas de pedidos
+  const getOrderStats = () => {
+    const total = orders.length;
+    const pendientes = orders.filter(o => o.status === 'pendiente').length;
+    const enProceso = orders.filter(o => o.status === 'en_proceso').length;
+    const enviados = orders.filter(o => o.status === 'enviado').length;
+    const entregados = orders.filter(o => o.status === 'entregado').length;
+    const cancelados = orders.filter(o => o.status === 'cancelado').length;
+    const totalPrecio = orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
+    
+    return { total, pendientes, enProceso, enviados, entregados, cancelados, totalPrecio };
+  };
+
+  const stats = getOrderStats();
+
   const getStatusBadge = (status) => {
     const statusMap = {
       'pendiente': 'pedidos-status-pending',
@@ -340,6 +355,69 @@ export function OrderList({ currentAdminId, currentUserRole }) {
         <h2 className="pedidos-title"><FaShoppingCart className="pedidos-title-icon" /> Gestión de Pedidos</h2>
       </div>
 
+      {/* Tarjetas de estadísticas */}
+      <div className="pedidos-stats-grid">
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon blue">
+            <FaClipboardList />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">Total Pedidos</span>
+            <span className="pedidos-stat-value">{stats.total}</span>
+          </div>
+        </div>
+
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon orange">
+            <FaClock />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">Pendientes</span>
+            <span className="pedidos-stat-value">{stats.pendientes}</span>
+          </div>
+        </div>
+
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon blue-light">
+            <FaSpinner />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">En Proceso</span>
+            <span className="pedidos-stat-value">{stats.enProceso}</span>
+          </div>
+        </div>
+
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon purple">
+            <FaTruck />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">Enviados</span>
+            <span className="pedidos-stat-value">{stats.enviados}</span>
+          </div>
+        </div>
+
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon green">
+            <FaCheckDouble />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">Entregados</span>
+            <span className="pedidos-stat-value">{stats.entregados}</span>
+          </div>
+        </div>
+
+        <div className="pedidos-stat-card">
+          <div className="pedidos-stat-icon red">
+            <FaChartLine />
+          </div>
+          <div className="pedidos-stat-info">
+            <span className="pedidos-stat-label">Total Ventas</span>
+            <span className="pedidos-stat-value total-sales">{formatCurrency(stats.totalPrecio)}</span>
+          </div>
+        </div>
+      </div>
+
       {showPermissionDenied && (
         <div className="pedidos-permission-denied">
           <FaExclamationTriangle />
@@ -410,18 +488,22 @@ export function OrderList({ currentAdminId, currentUserRole }) {
               
               return (
                 <tr key={order.id}>
-                  <td>{indexOfFirstOrder + index + 1}</td>
-                  <td className="pedidos-order-number">{order.order_number || `ORD-${order.id}`}</td>
-                  <td>
+                  <td data-label="#">{indexOfFirstOrder + index + 1}</td>
+                  <td data-label="Núm. Pedido" className="pedidos-order-number">
+                    {order.order_number || `ORD-${order.id}`}
+                  </td>
+                  <td data-label="Cliente">
                     <div className="pedidos-customer-info">
                       <strong>{order.customer_name}</strong>
                       <small>{order.customer_email}</small>
                     </div>
                   </td>
-                  <td className="pedidos-order-total">{formatCurrency(order.total)}</td>
-                  <td>{getStatusBadge(order.status)}</td>
-                  <td>{formatDate(order.created_at)}</td>
-                  <td className="pedidos-actions-cell">
+                  <td data-label="Total" className="pedidos-order-total">
+                    {formatCurrency(order.total)}
+                  </td>
+                  <td data-label="Estado">{getStatusBadge(order.status)}</td>
+                  <td data-label="Fecha">{formatDate(order.created_at)}</td>
+                  <td data-label="Acciones" className="pedidos-actions-cell">
                     <button 
                       onClick={() => handleView(order)} 
                       className="pedidos-view-btn"

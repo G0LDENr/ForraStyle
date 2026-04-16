@@ -6,7 +6,6 @@ export const OrderController = {
     try {
       let orders = await OrderModel.getAll()
       
-      // Administrador solo ve sus propios pedidos
       if (currentUserRole === 1) {
         orders = orders.filter(order => order.created_by === currentUserId)
       }
@@ -26,7 +25,6 @@ export const OrderController = {
         return { success: false, error: 'Pedido no encontrado' }
       }
       
-      // Administrador solo puede ver sus propios pedidos
       if (currentUserRole === 1 && order.created_by !== currentUserId) {
         return { success: false, error: 'No tienes permiso para ver este pedido' }
       }
@@ -38,7 +36,6 @@ export const OrderController = {
   },
 
   async createOrder(orderData, currentAdminId, currentUserRole) {
-    // Validaciones
     if (!orderData.customer_name || !orderData.customer_email || !orderData.items || orderData.items.length === 0) {
       return { success: false, error: 'Nombre del cliente, email y al menos un producto son requeridos' }
     }
@@ -55,24 +52,23 @@ export const OrderController = {
       return { success: false, error: 'El total debe ser un número positivo' }
     }
 
-    // SOLO Administradores tienen límite de creación diario
-    if (currentUserRole === 1) {
-      const canCreate = await AdminPermissionModel.canCreateOrder(currentAdminId)
-      if (!canCreate) {
-        const stats = await AdminPermissionModel.getDailyOrderCreationStats(currentAdminId)
-        const limitText = stats?.limit === 0 ? 'sin límite' : `${stats?.limit} pedidos por día`
+    const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole)
+    if (!permissions.canCreate) {
+      return { success: false, error: 'No tienes permiso para crear pedidos' }
+    }
+
+    if (currentUserRole === 1 && permissions.dailyLimit > 0) {
+      if (permissions.currentDailyCount >= permissions.dailyLimit) {
         return { 
           success: false, 
-          error: `Límite de creación alcanzado. ${limitText}` 
+          error: `Límite de creación alcanzado. Solo puedes crear ${permissions.dailyLimit} pedidos por día` 
         }
       }
     }
 
     try {
-      // Generar número de pedido único
       const orderNumber = await OrderModel.generateOrderNumber()
       
-      // Crear el pedido - USAR currentAdminId DIRECTAMENTE
       const newOrder = await OrderModel.create({
         ...orderData,
         order_number: orderNumber,
@@ -81,7 +77,6 @@ export const OrderController = {
         created_at: new Date().toISOString()
       })
       
-      // Incrementar contador SOLO para administradores
       if (currentUserRole === 1) {
         await AdminPermissionModel.incrementOrderCreateCount(currentAdminId)
       }
@@ -101,37 +96,32 @@ export const OrderController = {
         return { success: false, error: 'Pedido no encontrado' }
       }
       
-      // Administrador solo puede editar sus propios pedidos
-      if (currentUserRole === 1 && targetOrder.created_by !== currentAdminId) {
+      const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole)
+      
+      if (!permissions.canEdit) {
+        return { success: false, error: 'No tienes permiso para editar pedidos' }
+      }
+      
+      const canEditThisOrder = permissions.canEditAllOrders || targetOrder.created_by === currentAdminId
+      if (!canEditThisOrder) {
         return { success: false, error: 'No tienes permiso para editar este pedido' }
       }
       
-      // SOLO Administradores tienen límite de edición diario
-      if (currentUserRole === 1) {
-        const canEdit = await AdminPermissionModel.canEditOrder(currentAdminId, id, targetOrder.created_by)
-        if (!canEdit) {
-          const stats = await AdminPermissionModel.getDailyOrderEditStats(currentAdminId)
-          if (stats && stats.limit > 0 && stats.used >= stats.limit) {
-            return { 
-              success: false, 
-              error: `Límite de ediciones alcanzado. Solo puedes editar ${stats.limit} pedido(s) diferente(s) por día` 
-            }
-          }
+      if (currentUserRole === 1 && permissions.editDailyLimit > 0) {
+        if (permissions.currentEditCount >= permissions.editDailyLimit) {
           return { 
             success: false, 
-            error: 'No tienes permiso para editar este pedido' 
+            error: `Límite de ediciones alcanzado. Solo puedes editar ${permissions.editDailyLimit} pedido(s) por día` 
           }
         }
       }
       
-      // No permitir editar pedidos entregados o cancelados
       if (targetOrder.status === 'entregado' || targetOrder.status === 'cancelado') {
         return { success: false, error: 'No se pueden editar pedidos entregados o cancelados' }
       }
       
       const updatedOrder = await OrderModel.update(id, orderData)
       
-      // Registrar edición SOLO para administradores
       if (currentUserRole === 1) {
         await AdminPermissionModel.registerOrderEdit(currentAdminId, id)
       }
@@ -150,14 +140,19 @@ export const OrderController = {
         return { success: false, error: 'Pedido no encontrado' }
       }
       
-      // Validar estado
       const validStatuses = ['pendiente', 'en_proceso', 'enviado', 'entregado', 'cancelado']
       if (!validStatuses.includes(status)) {
         return { success: false, error: 'Estado inválido' }
       }
       
-      // Administrador solo puede modificar sus propios pedidos
-      if (currentUserRole === 1 && targetOrder.created_by !== currentAdminId) {
+      const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole)
+      
+      if (!permissions.canEdit) {
+        return { success: false, error: 'No tienes permiso para modificar pedidos' }
+      }
+      
+      const canEditThisOrder = permissions.canEditAllOrders || targetOrder.created_by === currentAdminId
+      if (!canEditThisOrder) {
         return { success: false, error: 'No tienes permiso para modificar este pedido' }
       }
       
@@ -176,12 +171,17 @@ export const OrderController = {
         return { success: false, error: 'Pedido no encontrado' }
       }
       
-      // Administrador solo puede eliminar sus propios pedidos
-      if (currentUserRole === 1 && targetOrder.created_by !== currentAdminId) {
+      const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole)
+      
+      if (!permissions.canDelete) {
+        return { success: false, error: 'No tienes permiso para eliminar pedidos' }
+      }
+      
+      const canDeleteThisOrder = permissions.canDeleteAllOrders || targetOrder.created_by === currentAdminId
+      if (!canDeleteThisOrder) {
         return { success: false, error: 'No tienes permiso para eliminar este pedido' }
       }
       
-      // SIN límites diarios para eliminar
       if (targetOrder.status === 'entregado') {
         return { success: false, error: 'No se pueden eliminar pedidos entregados' }
       }
@@ -207,13 +207,14 @@ export const OrderController = {
   async getOrderPermissions(adminId, currentUserRole) {
     console.log(`getOrderPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
     
-    // Super Admin (rol 0) - todos los permisos sin límites
     if (currentUserRole === 0) {
       console.log('✅ Super Admin - todos los permisos');
       return {
         canCreate: true,
         canEdit: true,
         canDelete: true,
+        canEditAllOrders: true,
+        canDeleteAllOrders: true,
         dailyLimit: 0,
         currentDailyCount: 0,
         editDailyLimit: 0,
@@ -221,11 +222,25 @@ export const OrderController = {
       };
     }
     
-    // Administrador (rol 1) - obtener permisos con límites
     if (currentUserRole === 1) {
       console.log('👤 Administrador - obteniendo permisos con límites');
       const permissions = await AdminPermissionModel.getOrderPermissions(adminId);
-      console.log('📦 Permisos obtenidos:', permissions);
+      console.log('📦 Permisos obtenidos del modelo:', permissions);
+      
+      if (!permissions) {
+        return {
+          canCreate: false,
+          canEdit: false,
+          canDelete: false,
+          canEditAllOrders: false,
+          canDeleteAllOrders: false,
+          dailyLimit: 0,
+          currentDailyCount: 0,
+          editDailyLimit: 0,
+          currentEditCount: 0
+        };
+      }
+      
       return permissions;
     }
     
@@ -233,15 +248,99 @@ export const OrderController = {
     return null;
   },
 
+  async updateOrderPermissions(adminId, permissions, currentUserRole) {
+    console.log('📝 updateOrderPermissions llamado:', { adminId, permissions, currentUserRole });
+    
+    try {
+      if (currentUserRole !== 0) {
+        return { success: false, error: 'No tienes permisos para actualizar permisos de pedidos' };
+      }
+      
+      // Asegurar que los parámetros tengan los nombres correctos
+      const orderPermissions = {
+        canCreateOrders: permissions.canCreateOrders !== undefined ? permissions.canCreateOrders : false,
+        orderDailyLimit: permissions.orderDailyLimit !== undefined ? permissions.orderDailyLimit : 0,
+        canEditOrders: permissions.canEditOrders !== undefined ? permissions.canEditOrders : false,
+        orderEditDailyLimit: permissions.orderEditDailyLimit !== undefined ? permissions.orderEditDailyLimit : 0,
+        canEditAllOrders: permissions.canEditAllOrders !== undefined ? permissions.canEditAllOrders : false,
+        canDeleteOrders: permissions.canDeleteOrders !== undefined ? permissions.canDeleteOrders : false,
+        canDeleteAllOrders: permissions.canDeleteAllOrders !== undefined ? permissions.canDeleteAllOrders : false
+      };
+      
+      console.log('📦 Enviando a updateOrderPermissions:', orderPermissions);
+      
+      const result = await AdminPermissionModel.updateOrderPermissions(adminId, orderPermissions);
+      
+      console.log('✅ Permisos de pedidos actualizados:', result);
+      
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('permissionsUpdated', { 
+          detail: { adminId, permissions: result }
+        }));
+      }
+      
+      return { success: true, data: result };
+    } catch (error) {
+      console.error('Error en updateOrderPermissions:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  async getAdminOrderPermissions(adminId, currentUserRole) {
+    console.log(`getAdminOrderPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
+    
+    try {
+      if (currentUserRole !== 0 && currentUserRole !== 1) {
+        return { success: false, error: 'No autorizado' };
+      }
+      
+      const permissions = await AdminPermissionModel.getOrderPermissions(adminId);
+      console.log('📦 Permisos desde getOrderPermissions:', permissions);
+      
+      if (!permissions) {
+        return { 
+          success: true, 
+          data: {
+            canCreateOrders: false,
+            orderDailyLimit: 0,
+            orderCurrentCount: 0,
+            canEditOrders: false,
+            orderEditDailyLimit: 0,
+            orderEditCurrentCount: 0,
+            canEditAllOrders: false,
+            canDeleteOrders: false,
+            canDeleteAllOrders: false
+          }
+        };
+      }
+      
+      return {
+        success: true,
+        data: {
+          canCreateOrders: permissions.canCreate || false,
+          orderDailyLimit: permissions.dailyLimit || 0,
+          orderCurrentCount: permissions.currentDailyCount || 0,
+          canEditOrders: permissions.canEdit || false,
+          orderEditDailyLimit: permissions.editDailyLimit || 0,
+          orderEditCurrentCount: permissions.currentEditCount || 0,
+          canEditAllOrders: permissions.canEditAllOrders || false,
+          canDeleteOrders: permissions.canDelete || false,
+          canDeleteAllOrders: permissions.canDeleteAllOrders || false
+        }
+      };
+    } catch (error) {
+      console.error('Error en getAdminOrderPermissions:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
   async getOrderStatistics(currentUserId, currentUserRole, startDate, endDate) {
     try {
       let statistics;
       
       if (currentUserRole === 0) {
-        // Super Admin ve todas las estadísticas
         statistics = await OrderModel.getAllStatistics(startDate, endDate)
       } else if (currentUserRole === 1) {
-        // Administrador solo ve sus estadísticas
         statistics = await OrderModel.getUserStatistics(currentUserId, startDate, endDate)
       } else {
         return { success: false, error: 'No autorizado' }

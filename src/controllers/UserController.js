@@ -184,24 +184,19 @@ export const UserController = {
     return await AdminPermissionModel.getDailyEditStats(currentAdminId)
   },
 
-  // CORREGIDO: Usar el método getUserPermissions del modelo
   async getUserPermissions(adminId, currentUserRole) {
     console.log(`getUserPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
     
-    // Super Admin (rol 0) puede ver todos los permisos
-    // Administradores (rol 1) pueden ver sus propios permisos
     if (currentUserRole !== 0 && currentUserRole !== 1) {
       console.log('❌ Rol no autorizado para ver permisos');
       return null;
     }
     
     try {
-      // Usar el método del modelo que ya maneja la creación por defecto
       const permissions = await AdminPermissionModel.getUserPermissions(adminId);
       console.log('📦 Permisos desde el modelo:', permissions);
       
       if (!permissions) {
-        console.log('⚠️ No se encontraron permisos');
         return {
           canCreate: false,
           canEdit: false,
@@ -236,23 +231,35 @@ export const UserController = {
   },
 
   async updateAdminPermissions(adminId, permissionsData, currentUserRole) {
+    console.log('📝 updateAdminPermissions (usuarios) llamado:', { adminId, permissionsData, currentUserRole });
+    
     if (currentUserRole !== 0) {
-      return { success: false, error: 'No tienes permiso para modificar permisos' }
+      return { success: false, error: 'No tienes permiso para modificar permisos' };
     }
 
     try {
-      const updated = await AdminPermissionModel.update(adminId, permissionsData)
-      return { success: true, data: updated }
+      const updated = await AdminPermissionModel.update(adminId, {
+        canCreateUsers: permissionsData.canCreateUsers,
+        createDailyLimit: permissionsData.createDailyLimit,
+        canEditUsers: permissionsData.canEditUsers,
+        editDailyLimit: permissionsData.editDailyLimit,
+        canEditAdmins: permissionsData.canEditAdmins,
+        canDeleteUsers: permissionsData.canDeleteUsers,
+        canDeleteAdmins: permissionsData.canDeleteAdmins,
+        canDeleteSuperAdmin: permissionsData.canDeleteSuperAdmin
+      });
+      
+      console.log('✅ Permisos de usuarios actualizados:', updated);
+      return { success: true, data: updated };
     } catch (error) {
       console.error('Error en updateAdminPermissions:', error);
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     }
   },
 
   async resetAdminCounters(adminId, currentUserRole) {
     console.log('🔄 Reiniciando contadores para:', { adminId, currentUserRole });
     
-    // Solo Super Admin puede reiniciar contadores
     if (currentUserRole !== 0) {
       console.log('❌ Usuario no autorizado para reiniciar contadores');
       return { success: false, error: 'No tienes permiso para reiniciar contadores. Solo Super Administradores.' };
@@ -267,5 +274,4 @@ export const UserController = {
       return { success: false, error: error.message };
     }
   }
-
 };

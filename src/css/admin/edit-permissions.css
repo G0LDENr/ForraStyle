@@ -528,6 +528,61 @@
   margin: 20px 0;
 }
 
+/* Tabs para cambiar entre permisos */
+.edit-permissions-tabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.edit-permissions-tabs .tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: none;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.edit-permissions-tabs .tab-btn:hover {
+  color: #3b82f6;
+}
+
+.edit-permissions-tabs .tab-btn.active {
+  color: #3b82f6;
+}
+
+.edit-permissions-tabs .tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3b82f6;
+}
+
+/* Estilos para los contadores diarios */
+.limit-help-text {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+/* Ajustes para el ícono de pedidos */
+.edit-permission-icon.fa-shopping-cart {
+  color: #10b981;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .edit-limit-input-group {
