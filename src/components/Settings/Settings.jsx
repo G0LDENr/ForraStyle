@@ -4,7 +4,7 @@ import { AdminEarningsModel } from '../../models/AdminEarningsModel';
 import { UserController } from '../../controllers/UserController';
 import '../../css/settings/settings.css';
 
-export function SettingsManager({ userData, users, orders }) {
+export function SettingsManager({ userData, users = [], orders = [] }) {
   const [adminPermissions, setAdminPermissions] = useState(null);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   
@@ -13,6 +13,8 @@ export function SettingsManager({ userData, users, orders }) {
   const [loadingEarnings, setLoadingEarnings] = useState(false);
 
   const loadAdminPermissions = useCallback(async () => {
+    if (!userData?.id) return;
+    
     setLoadingPermissions(true);
     try {
       const permissions = await UserController.getUserPermissions(userData.id, userData.rol);
@@ -54,7 +56,7 @@ export function SettingsManager({ userData, users, orders }) {
     } finally {
       setLoadingPermissions(false);
     }
-  }, [userData.id, userData.rol]);
+  }, [userData?.id, userData?.rol]);
 
   const loadEarningsConfig = useCallback(async () => {
     if (!userData?.id) return;
@@ -68,7 +70,7 @@ export function SettingsManager({ userData, users, orders }) {
     } finally {
       setLoadingEarnings(false);
     }
-  }, [userData.id]);
+  }, [userData?.id]);
 
   useEffect(() => {
     if (userData?.rol === 1) {
@@ -88,6 +90,20 @@ export function SettingsManager({ userData, users, orders }) {
     if (limit === 0) return 'sin limite';
     return `${limit} ediciones por dia`;
   };
+
+  // Validar que userData existe
+  if (!userData) {
+    return (
+      <div className="settings-container">
+        <div className="settings-card">
+          <div className="settings-loading">
+            <FaSpinner className="spinner" />
+            <span>Cargando información del usuario...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings-container">
@@ -240,11 +256,11 @@ export function SettingsManager({ userData, users, orders }) {
           </div>
           <div className="settings-item">
             <label>Total de usuarios:</label>
-            <span>{users.length}</span>
+            <span>{users?.length || 0}</span>
           </div>
           <div className="settings-item">
             <label>Total de pedidos:</label>
-            <span>{orders.length}</span>
+            <span>{orders?.length || 0}</span>
           </div>
         </div>
       </div>

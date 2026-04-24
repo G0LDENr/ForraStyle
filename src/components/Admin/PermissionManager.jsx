@@ -112,7 +112,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
           })
         );
         
-        console.log('\n🎯 Todos los admins procesados:', adminsWithPermissions);
+        console.log('\nTodos los admins procesados:', adminsWithPermissions);
         setAdmins(adminsWithPermissions);
         setFilteredAdmins(adminsWithPermissions);
       } else {
@@ -124,7 +124,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
       setError('Error al cargar la lista de administradores');
     } finally {
       setLoading(false);
-      console.log('🏁 Carga finalizada');
+      console.log('Carga finalizada');
     }
   }, [currentUserId, currentUserRole, toBoolean]);
 
@@ -290,7 +290,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
           className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
           onClick={() => setActiveTab('users')}
         >
-          👥 Permisos de Usuarios
+          Permisos de Usuarios
         </button>
         <button 
           className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
@@ -431,7 +431,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
                                 <small>(sin límite)</small>
                               )}
                               {admin.currentCounts?.orderCurrentCount > 0 && (
-                                <small className="count-badge">📊 Hoy: {admin.currentCounts.orderCurrentCount}</small>
+                                <small className="count-badge">Hoy: {admin.currentCounts.orderCurrentCount}</small>
                               )}
                             </span>
                           ) : (
