@@ -535,6 +535,124 @@
   margin: 0;
 }
 
+/* Tabla de permisos */
+.settings-permissions-table-container {
+  background: white;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.settings-permissions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.settings-permissions-table thead tr {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.settings-permissions-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-permissions-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #4b5563;
+}
+
+.settings-permissions-table tr:last-child td {
+  border-bottom: none;
+}
+
+.settings-permission-name {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.settings-permission-subrow {
+  background-color: #f9fafb;
+}
+
+.sub-permission-name {
+  padding-left: 32px !important;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.settings-delete-subpermissions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-sub-badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1e40af;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.settings-sub-badge.warning {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Subsecciones */
+.settings-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1.5rem 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e3a8a;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.settings-subsection-icon {
+  font-size: 0.9rem;
+  color: #3b82f6;
+}
+
+/* Espaciado entre tablas */
+.settings-permissions-table-container:first-of-type {
+  margin-top: 0;
+}
+
+.settings-permissions-table-container {
+  margin-bottom: 1rem;
+}
+
+/* Responsive para la tabla */
+@media (max-width: 640px) {
+  .settings-permissions-table th,
+  .settings-permissions-table td {
+    padding: 8px 12px;
+  }
+  
+  .settings-permissions-table {
+    font-size: 0.75rem;
+  }
+  
+  .sub-permission-name {
+    padding-left: 20px !important;
+  }
+}
+
 /* Animaciones */
 @keyframes settings-fadeIn {
   from { opacity: 0; }
