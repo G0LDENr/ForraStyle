@@ -176,7 +176,7 @@
 }
 
 .error-text {
-  color: #fecaca;
+  color: #000000;
   font-size: 0.875rem;
 }
 
@@ -370,6 +370,57 @@
 /* Mejorar mensajes de éxito para diferentes roles */
 .success-message {
   animation: slideDown 0.3s ease;
+}
+
+/* Estilos para el campo con error */
+.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+}
+
+.input-error:focus {
+  outline: none;
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+}
+
+/* Estilos para el wrapper del input de contraseña */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  flex: 1;
+  padding-right: 40px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: color 0.2s;
+}
+
+.password-toggle:hover {
+  color: #374151;
+}
+
+.password-toggle:focus {
+  outline: none;
+}
+
+/* Ajuste para el contenedor del grupo de formulario */
+.form-group {
+  position: relative;
 }
 
 @keyframes slideDown {

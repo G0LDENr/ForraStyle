@@ -18,6 +18,11 @@ const Login = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({
+    email: false,
+    password: false
+  });
 
   const handleChange = (e) => {
     setFormData({
@@ -26,6 +31,13 @@ const Login = ({ onLoginSuccess }) => {
     });
     setError('');
     setSuccess('');
+    // Limpiar error del campo cuando el usuario empieza a escribir
+    if (fieldErrors[e.target.name]) {
+      setFieldErrors({
+        ...fieldErrors,
+        [e.target.name]: false
+      });
+    }
   };
 
   const handleLogin = async (e) => {
@@ -33,6 +45,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
     setError('');
     setSuccess('');
+    setFieldErrors({ email: false, password: false });
 
     const result = await UserController.login(formData.email, formData.password);
     
@@ -42,19 +55,17 @@ const Login = ({ onLoginSuccess }) => {
       const userWithToken = {
         ...result.data,
         token: token,
-        rol: result.data.rol // Asegurar que el rol está presente
+        rol: result.data.rol
       };
       
       localStorage.setItem('user', JSON.stringify(userWithToken));
       localStorage.setItem('token', token);
-      localStorage.setItem('userRole', result.data.rol); // Guardar rol separadamente
+      localStorage.setItem('userRole', result.data.rol);
       
       // Crear permisos por defecto para nuevos admins (rol 1)
       if (result.data.rol === 1) {
-        // Verificar si ya tiene permisos configurados
         const existingPermissions = localStorage.getItem(`admin_permissions_${result.data.id}`);
         if (!existingPermissions) {
-          // Permisos por defecto para nuevos admins (todos deshabilitados)
           const defaultPermissions = {
             createUsers: { enabled: false, dailyLimit: 0, currentCount: 0, lastReset: new Date().toDateString() },
             editUsers: { enabled: false, canEditAdmins: false },
@@ -66,16 +77,6 @@ const Login = ({ onLoginSuccess }) => {
         }
       }
       
-      // Mensaje de bienvenida personalizado según el rol
-      let welcomeMessage = `¡Bienvenido de vuelta, ${result.data.name}! Redirigiendo...`;
-      if (result.data.rol === 0) {
-        welcomeMessage = `¡Bienvenido Super Administrador ${result.data.name}! Redirigiendo al panel de control...`;
-      } else if (result.data.rol === 1) {
-        welcomeMessage = `¡Bienvenido Administrador ${result.data.name}! Redirigiendo al panel de control...`;
-      }
-      
-      setSuccess(welcomeMessage);
-      
       setTimeout(() => {
         if (onLoginSuccess) {
           onLoginSuccess(userWithToken);
@@ -83,14 +84,29 @@ const Login = ({ onLoginSuccess }) => {
         
         // Redirigir según el rol
         if (result.data.rol === 1 || result.data.rol === 0) {
-          // Tanto admin (rol 1) como super admin (rol 0) van a /admin
           navigate('/admin');
         } else {
           navigate('/home');
         }
-      }, 1500);
+      }, 500); // Reducción del timeout a 500ms
     } else {
-      setError(result.error);
+      // Determinar qué campo tiene el error
+      const errorMessage = result.error.toLowerCase();
+      const newFieldErrors = { email: false, password: false };
+      
+      if (errorMessage.includes('email') || errorMessage.includes('correo')) {
+        newFieldErrors.email = true;
+        setError('Correo electrónico incorrecto');
+      } else if (errorMessage.includes('password') || errorMessage.includes('contraseña')) {
+        newFieldErrors.password = true;
+        setError('Contraseña incorrecta');
+      } else {
+        setError('Correo o contraseña incorrectos');
+        newFieldErrors.email = true;
+        newFieldErrors.password = true;
+      }
+      
+      setFieldErrors(newFieldErrors);
       setLoading(false);
     }
   };
@@ -119,7 +135,6 @@ const Login = ({ onLoginSuccess }) => {
       return;
     }
 
-    // En registro, siempre se crea como usuario normal (rol 2)
     const userToCreate = {
       ...formData,
       rol: 2
@@ -130,7 +145,6 @@ const Login = ({ onLoginSuccess }) => {
     if (result.success) {
       setSuccess(`¡Registro exitoso! Bienvenido ${result.data.name}. Redirigiendo...`);
       
-      // Auto login después del registro
       const loginResult = await UserController.login(formData.email, formData.password);
       
       if (loginResult.success) {
@@ -148,10 +162,9 @@ const Login = ({ onLoginSuccess }) => {
           if (onLoginSuccess) {
             onLoginSuccess(userWithToken);
           }
-          navigate('/home'); // Los usuarios normales (rol 2) van a /home
+          navigate('/home');
         }, 1500);
       } else {
-        // Si el auto login falla, redirigir al login
         setTimeout(() => {
           toggleMode();
         }, 1500);
@@ -166,6 +179,7 @@ const Login = ({ onLoginSuccess }) => {
     setIsLogin(!isLogin);
     setError('');
     setSuccess('');
+    setFieldErrors({ email: false, password: false });
     setFormData({
       email: '',
       password: '',
@@ -174,6 +188,10 @@ const Login = ({ onLoginSuccess }) => {
       age: '',
       rol: 2
     });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -274,20 +292,41 @@ const Login = ({ onLoginSuccess }) => {
                     value={formData.email}
                     onChange={handleChange}
                     placeholder="tu@email.com"
+                    className={fieldErrors.email ? 'input-error' : ''}
                   />
                 </div>
 
                 <div className="form-group">
                   <label>Contraseña *</label>
-                  <input
-                    name="password"
-                    type="password"
-                    autoComplete={isLogin ? "current-password" : "new-password"}
-                    required
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder={isLogin ? "Tu contraseña" : "Mínimo 6 caracteres"}
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete={isLogin ? "current-password" : "new-password"}
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder={isLogin ? "Tu contraseña" : "Mínimo 6 caracteres"}
+                      className={fieldErrors.password ? 'input-error' : ''}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={togglePasswordVisibility}
+                      tabIndex="-1"
+                    >
+                      {showPassword ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   {!isLogin && (
                     <small className="input-hint">La contraseña debe tener al menos 6 caracteres</small>
                   )}
