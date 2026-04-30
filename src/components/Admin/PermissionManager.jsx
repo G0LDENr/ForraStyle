@@ -19,6 +19,7 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [selectedPermissions, setSelectedPermissions] = useState(null);
+  const [initialModalTab, setInitialModalTab] = useState('users');
 
   const canEditAdminPermissions = useCallback(() => {
     return currentUserRole === 0;
@@ -173,6 +174,9 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
       editOrders: { ...admin.permissions.editOrders },
       deleteOrders: { ...admin.permissions.deleteOrders }
     });
+    
+    // Establece la pestaña inicial basada en el activeTab actual
+    setInitialModalTab(activeTab);
     setIsEditModalOpen(true);
   };
 
@@ -221,6 +225,15 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
         setIsEditModalOpen(false);
         setSelectedAdmin(null);
         setSelectedPermissions(null);
+        setInitialModalTab('users');
+        
+        // Disparar evento para actualizar todos los componentes
+        window.dispatchEvent(new CustomEvent('permissionsUpdated', { 
+          detail: { 
+            adminId: selectedAdmin.id,
+            permissions: newPermissions 
+          } 
+        }));
       } else {
         setMessage(`❌ Error: ${userResult.error || orderResult.error}`);
       }
@@ -546,11 +559,13 @@ const PermissionManager = ({ currentUserRole, currentUserId }) => {
           setIsEditModalOpen(false);
           setSelectedAdmin(null);
           setSelectedPermissions(null);
+          setInitialModalTab('users');
         }}
         onSave={handleSavePermissions}
         admin={selectedAdmin}
         permissions={selectedPermissions}
         currentUserRole={currentUserRole}
+        initialTab={initialModalTab}
       />
     </div>
   );

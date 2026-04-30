@@ -19,11 +19,12 @@ export function OrderList({ currentAdminId, currentUserRole }) {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [currentPage, setCurrentPage] = useState(1);
   const [ordersPerPage] = useState(10);
-  const [dailyStats, setDailyStats] = useState(null);
   const [permissions, setPermissions] = useState({
     canCreate: false,
     canEdit: false,
     canDelete: false,
+    canEditAllOrders: false,
+    canDeleteAllOrders: false,
     dailyLimit: 0,
     currentDailyCount: 0,
     editDailyLimit: 0,
@@ -56,90 +57,115 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     return { adminId, userRole };
   }, [currentAdminId, currentUserRole]);
 
-  const loadPermissionsAndStats = useCallback(async (adminId, userRole) => {
-    try {
-      const permissionsResult = await OrderController.getOrderPermissions(adminId, userRole);
-      if (permissionsResult) {
-        setPermissions({
-          canCreate: permissionsResult.canCreate || false,
-          canEdit: permissionsResult.canEdit || false,
-          canDelete: permissionsResult.canDelete || false,
-          dailyLimit: permissionsResult.dailyLimit || 0,
-          currentDailyCount: permissionsResult.currentDailyCount || 0,
-          editDailyLimit: permissionsResult.editDailyLimit || 0,
-          currentEditCount: permissionsResult.currentEditCount || 0
-        });
-      }
-      
-      if (userRole === 1) {
-        const stats = await OrderController.getDailyOrderStats(adminId, userRole);
-        setDailyStats(stats);
-      }
-    } catch (error) {
-      console.error('Error cargando permisos/estadisticas:', error);
-    }
-  }, []);
-
-  const refreshStats = useCallback(async () => {
-    try {
-      const { adminId, userRole } = getAdminIdAndRole();
-      
-      if (userRole === 1 && adminId) {
-        const stats = await OrderController.getDailyOrderStats(adminId, userRole);
-        setDailyStats(stats);
-        
-        const permissionsResult = await OrderController.getOrderPermissions(adminId, userRole);
-        if (permissionsResult) {
-          setPermissions({
-            canCreate: permissionsResult.canCreate || false,
-            canEdit: permissionsResult.canEdit || false,
-            canDelete: permissionsResult.canDelete || false,
-            dailyLimit: permissionsResult.dailyLimit || 0,
-            currentDailyCount: permissionsResult.currentDailyCount || 0,
-            editDailyLimit: permissionsResult.editDailyLimit || 0,
-            currentEditCount: permissionsResult.currentEditCount || 0
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error refrescando estadisticas:', error);
-    }
-  }, [getAdminIdAndRole]);
-
-  useEffect(() => {
-    const handlePermissionsUpdated = (event) => {
-      console.log('🔄 Permisos actualizados, recargando...', event.detail);
-      refreshStats();
-    };
-    
-    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
-    return () => {
-      window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
-    };
-  }, [refreshStats]);
-
-  const loadAllData = useCallback(async () => {
+  // Función para cargar SOLO los pedidos
+  const loadOrders = useCallback(async () => {
     setLoading(true);
+    setError(null);
     
     try {
       const { adminId, userRole } = getAdminIdAndRole();
+      console.log('📊 Cargando pedidos - Admin ID:', adminId, 'Rol:', userRole);
       
-      const ordersResult = await OrderController.getOrders(adminId, userRole);
-      if (ordersResult.success) {
-        setOrders(ordersResult.data);
+      const result = await OrderController.getOrders(adminId, userRole);
+      console.log('📦 Resultado de pedidos:', result);
+      
+      if (result.success) {
+        console.log(`📋 Total de pedidos cargados: ${result.data.length}`);
+        setOrders(result.data);
       } else {
-        setError(ordersResult.error);
+        console.error('❌ Error:', result.error);
+        setError(result.error);
       }
-      
-      await loadPermissionsAndStats(adminId, userRole);
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error fatal:', err);
       setError('Error al cargar los datos');
     } finally {
       setLoading(false);
     }
-  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+  }, [getAdminIdAndRole]);
 
+  // Cargar permisos
+  const loadPermissions = useCallback(async () => {
+    try {
+      const { adminId, userRole } = getAdminIdAndRole();
+      console.log('🔐 Cargando permisos para:', { adminId, userRole });
+      
+      // SUPER ADMIN - todos los permisos
+      if (userRole === 0) {
+        console.log('👑 Super Admin - todos los permisos true');
+        setPermissions({
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAllOrders: true,
+          canDeleteAllOrders: true,
+          dailyLimit: 0,
+          currentDailyCount: 0,
+          editDailyLimit: 0,
+          currentEditCount: 0
+        });
+        return;
+      }
+      
+      // ADMIN - obtener permisos de la BD
+      if (userRole === 1) {
+        const perms = await OrderController.getOrderPermissions(adminId, userRole);
+        console.log('📦 Permisos desde controller:', perms);
+        
+        if (perms) {
+          setPermissions({
+            canCreate: perms.canCreate === true,
+            canEdit: perms.canEdit === true,
+            canDelete: perms.canDelete === true,
+            canEditAllOrders: perms.canEditAllOrders === true,
+            canDeleteAllOrders: perms.canDeleteAllOrders === true,
+            dailyLimit: perms.dailyLimit || 0,
+            currentDailyCount: perms.currentDailyCount || 0,
+            editDailyLimit: perms.editDailyLimit || 0,
+            currentEditCount: perms.currentEditCount || 0
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando permisos:', error);
+      // En caso de error, dar permisos básicos
+      setPermissions({
+        canCreate: true,
+        canEdit: true,
+        canDelete: false,
+        canEditAllOrders: false,
+        canDeleteAllOrders: false,
+        dailyLimit: 0,
+        currentDailyCount: 0,
+        editDailyLimit: 0,
+        currentEditCount: 0
+      });
+    }
+  }, [getAdminIdAndRole]);
+
+  // Cargar todo
+  const loadAllData = useCallback(async () => {
+    await Promise.all([loadOrders(), loadPermissions()]);
+  }, [loadOrders, loadPermissions]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAllData();
+    setRefreshing(false);
+  }, [loadAllData]);
+
+  // Escuchar evento de actualización de permisos
+  useEffect(() => {
+    const handlePermissionsUpdated = () => {
+      console.log('🔄 Evento permissionsUpdated recibido');
+      loadPermissions();
+      loadOrders();
+    };
+    window.addEventListener('permissionsUpdated', handlePermissionsUpdated);
+    return () => window.removeEventListener('permissionsUpdated', handlePermissionsUpdated);
+  }, [loadPermissions, loadOrders]);
+
+  // Carga inicial
   useEffect(() => {
     if (!initialLoadDone.current) {
       initialLoadDone.current = true;
@@ -147,78 +173,79 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     }
   }, [loadAllData]);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    
-    try {
-      const { adminId, userRole } = getAdminIdAndRole();
-      
-      const ordersResult = await OrderController.getOrders(adminId, userRole);
-      if (ordersResult.success) {
-        setOrders(ordersResult.data);
-      }
-      
-      await loadPermissionsAndStats(adminId, userRole);
-    } catch (error) {
-      console.error('Error refrescando:', error);
-      setPermissionError('Error al refrescar los datos');
+  // Verificar si puede crear
+  const canCreateOrder = useCallback(() => {
+    const { userRole } = getAdminIdAndRole();
+    if (userRole === 0) return true;
+    return permissions.canCreate === true;
+  }, [getAdminIdAndRole, permissions.canCreate]);
+
+  // Verificar si puede editar un pedido específico
+  const canEditOrder = useCallback((order) => {
+    const { adminId, userRole } = getAdminIdAndRole();
+    if (userRole === 0) return true;
+    if (!permissions.canEdit) return false;
+    if (permissions.canEditAllOrders) return true;
+    return order.created_by === adminId;
+  }, [getAdminIdAndRole, permissions.canEdit, permissions.canEditAllOrders]);
+
+  // Verificar si puede eliminar un pedido específico
+  const canDeleteOrder = useCallback((order) => {
+    const { adminId, userRole } = getAdminIdAndRole();
+    if (userRole === 0) return true;
+    if (!permissions.canDelete) return false;
+    if (permissions.canDeleteAllOrders) return true;
+    return order.created_by === adminId;
+  }, [getAdminIdAndRole, permissions.canDelete, permissions.canDeleteAllOrders]);
+
+  // Handlers
+  const handleCreateClick = () => {
+    if (!canCreateOrder()) {
+      setPermissionError('No tienes permiso para crear pedidos');
       setShowPermissionDenied(true);
       setTimeout(() => setShowPermissionDenied(false), 3000);
-    } finally {
-      setRefreshing(false);
+      return;
     }
-  }, [getAdminIdAndRole, loadPermissionsAndStats]);
+    setIsCreateModalOpen(true);
+  };
 
-  const refreshOrders = useCallback(async () => {
-    try {
-      const { adminId, userRole } = getAdminIdAndRole();
-      const result = await OrderController.getOrders(adminId, userRole);
-      if (result.success) {
-        setOrders(result.data);
-      }
-    } catch (error) {
-      console.error('Error refrescando pedidos:', error);
+  const handleEdit = (order) => {
+    if (!canEditOrder(order)) {
+      setPermissionError('No tienes permiso para editar este pedido');
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+      return;
     }
-  }, [getAdminIdAndRole]);
+    setSelectedOrder(order);
+    setIsEditModalOpen(true);
+  };
 
-  const canCreateOrder = useCallback(() => {
-    if (currentUserRole === 0) return true;
-    if (!permissions.canCreate) return false;
-    if (permissions.dailyLimit === 0) return true;
-    return permissions.currentDailyCount < permissions.dailyLimit;
-  }, [currentUserRole, permissions.canCreate, permissions.dailyLimit, permissions.currentDailyCount]);
-
-  const canEditOrder = useCallback((order) => {
-    if (currentUserRole === 0) return true;
-    if (!permissions.canEdit) return false;
-    if (order.created_by !== currentAdminId) return false;
-    if (permissions.editDailyLimit === 0) return true;
-    return permissions.currentEditCount < permissions.editDailyLimit;
-  }, [currentUserRole, permissions.canEdit, permissions.editDailyLimit, permissions.currentEditCount, currentAdminId]);
-
-  const canDeleteOrder = useCallback((order) => {
-    if (currentUserRole === 0) return true;
-    if (!permissions.canDelete) return false;
-    return order.created_by === currentAdminId;
-  }, [currentUserRole, permissions.canDelete, currentAdminId]);
+  const handleView = (order) => {
+    setSelectedOrder(order);
+    setIsViewModalOpen(true);
+  };
 
   const handleDeleteClick = (order) => {
+    if (!canDeleteOrder(order)) {
+      setPermissionError('No tienes permiso para eliminar este pedido');
+      setShowPermissionDenied(true);
+      setTimeout(() => setShowPermissionDenied(false), 3000);
+      return;
+    }
     setOrderToDelete(order);
     setShowConfirmModal(true);
   };
 
   const handleDeleteConfirm = async () => {
     setDeleteLoading(true);
-    
     const { adminId, userRole } = getAdminIdAndRole();
-    
     const result = await OrderController.deleteOrder(orderToDelete.id, adminId, userRole);
+    
     if (result.success) {
       setSuccessMessage('Pedido eliminado exitosamente');
       setShowConfirmModal(false);
       setShowSuccessModal(true);
-      await refreshOrders();
-      await refreshStats();
+      await loadOrders();
       setTimeout(() => setShowSuccessModal(false), 2000);
     } else {
       setPermissionError(result.error);
@@ -230,43 +257,17 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     setOrderToDelete(null);
   };
 
-  const handleEdit = (order) => {
-    setSelectedOrder(order);
-    setIsEditModalOpen(true);
-  };
-
-  const handleView = (order) => {
-    setSelectedOrder(order);
-    setIsViewModalOpen(true);
-  };
-
-  const handleCreateClick = () => {
-    if (!canCreateOrder()) {
-      let errorMsg = 'No tienes permiso para crear pedidos';
-      if (permissions.dailyLimit > 0 && permissions.currentDailyCount >= permissions.dailyLimit) {
-        errorMsg = `Límite de creación alcanzado. Solo puedes crear ${permissions.dailyLimit} pedidos por día`;
-      } else if (!permissions.canCreate) {
-        errorMsg = 'No tienes permiso para crear pedidos';
-      }
-      setPermissionError(errorMsg);
-      setShowPermissionDenied(true);
-      setTimeout(() => setShowPermissionDenied(false), 3000);
-      return;
-    }
-    setIsCreateModalOpen(true);
-  };
-
   const handleOrderCreated = async () => {
-    await refreshOrders();
-    await refreshStats();
+    await loadOrders();
+    await loadPermissions();
   };
 
   const handleOrderUpdated = async () => {
-    await refreshOrders();
-    await refreshStats();
+    await loadOrders();
+    await loadPermissions();
   };
 
-  // Calcular estadísticas de pedidos
+  // Estadísticas
   const getOrderStats = () => {
     const total = orders.length;
     const pendientes = orders.filter(o => o.status === 'pendiente').length;
@@ -275,7 +276,6 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     const entregados = orders.filter(o => o.status === 'entregado').length;
     const cancelados = orders.filter(o => o.status === 'cancelado').length;
     const totalPrecio = orders.reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
-    
     return { total, pendientes, enProceso, enviados, entregados, cancelados, totalPrecio };
   };
 
@@ -299,6 +299,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     return <span className={`pedidos-order-status-badge ${statusMap[status] || 'pedidos-status-pending'}`}>{statusText[status] || status}</span>;
   };
 
+  // Filtros
   const filteredOrders = orders.filter(order => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = order.customer_name?.toLowerCase().includes(searchLower) || 
@@ -309,6 +310,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
     return matchesSearch && matchesStatus;
   });
 
+  // Paginación
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder);
@@ -342,7 +344,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
       <div className="pedidos-error">
         <FaExclamationTriangle />
         <span>Error: {error}</span>
-        <button onClick={() => { initialLoadDone.current = false; loadAllData(); }} className="pedidos-retry-btn">
+        <button onClick={() => loadAllData()} className="pedidos-retry-btn">
           Reintentar
         </button>
       </div>
@@ -352,65 +354,50 @@ export function OrderList({ currentAdminId, currentUserRole }) {
   return (
     <div className="pedidos-container">
       <div className="pedidos-header">
-        <h2 className="pedidos-title"><FaShoppingCart className="pedidos-title-icon" /> Gestión de Pedidos</h2>
+        <h2 className="pedidos-title">
+          <FaShoppingCart className="pedidos-title-icon" /> Gestión de Pedidos
+        </h2>
       </div>
 
       {/* Tarjetas de estadísticas */}
       <div className="pedidos-stats-grid">
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon blue">
-            <FaClipboardList />
-          </div>
+          <div className="pedidos-stat-icon blue"><FaClipboardList /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">Total Pedidos</span>
             <span className="pedidos-stat-value">{stats.total}</span>
           </div>
         </div>
-
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon orange">
-            <FaClock />
-          </div>
+          <div className="pedidos-stat-icon orange"><FaClock /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">Pendientes</span>
             <span className="pedidos-stat-value">{stats.pendientes}</span>
           </div>
         </div>
-
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon blue-light">
-            <FaSpinner />
-          </div>
+          <div className="pedidos-stat-icon blue-light"><FaSpinner /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">En Proceso</span>
             <span className="pedidos-stat-value">{stats.enProceso}</span>
           </div>
         </div>
-
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon purple">
-            <FaTruck />
-          </div>
+          <div className="pedidos-stat-icon purple"><FaTruck /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">Enviados</span>
             <span className="pedidos-stat-value">{stats.enviados}</span>
           </div>
         </div>
-
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon green">
-            <FaCheckDouble />
-          </div>
+          <div className="pedidos-stat-icon green"><FaCheckDouble /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">Entregados</span>
             <span className="pedidos-stat-value">{stats.entregados}</span>
           </div>
         </div>
-
         <div className="pedidos-stat-card">
-          <div className="pedidos-stat-icon red">
-            <FaChartLine />
-          </div>
+          <div className="pedidos-stat-icon red"><FaChartLine /></div>
           <div className="pedidos-stat-info">
             <span className="pedidos-stat-label">Total Ventas</span>
             <span className="pedidos-stat-value total-sales">{formatCurrency(stats.totalPrecio)}</span>
@@ -418,23 +405,23 @@ export function OrderList({ currentAdminId, currentUserRole }) {
         </div>
       </div>
 
+      {/* Mensajes */}
       {showPermissionDenied && (
         <div className="pedidos-permission-denied">
-          <FaExclamationTriangle />
-          <span>{permissionError}</span>
+          <FaExclamationTriangle /> {permissionError}
         </div>
       )}
 
-      {successMessage && !showSuccessModal && (
-        <div className="pedidos-success-message">
-          <FaCheckCircle />
-          <span>{successMessage}</span>
-        </div>
-      )}
-
+      {/* Barra de búsqueda */}
       <div className="pedidos-search-bar">
         <div className="pedidos-search-wrapper">
-          <input type="text" placeholder="Buscar por cliente, email o número de pedido..." value={searchTerm} onChange={handleSearch} className="pedidos-search-input" />
+          <input 
+            type="text" 
+            placeholder="Buscar por cliente, email o número de pedido..." 
+            value={searchTerm} 
+            onChange={handleSearch} 
+            className="pedidos-search-input" 
+          />
         </div>
         <div className="pedidos-status-filter-wrapper">
           <select value={statusFilter} onChange={(e) => handleStatusFilter(e.target.value)} className="pedidos-status-filter-select">
@@ -447,20 +434,10 @@ export function OrderList({ currentAdminId, currentUserRole }) {
           </select>
         </div>
         <div className="pedidos-actions">
-          <button 
-            onClick={handleRefresh} 
-            className="pedidos-refresh-btn"
-            disabled={refreshing}
-            title="Actualizar datos"
-          >
-            <FaSync className={refreshing ? 'pedidos-spinning' : ''} /> {refreshing ? 'Actualizando...' : 'Actualizar'}
+          <button onClick={handleRefresh} className="pedidos-refresh-btn" disabled={refreshing}>
+            <FaSync className={refreshing ? 'pedidos-spinning' : ''} /> Actualizar
           </button>
-          {dailyStats && permissions.canCreate && (
-            <div className="pedidos-daily-stats-badge" title={`Creados hoy: ${dailyStats.used} / ${dailyStats.limit === 0 ? 'Sin límite' : dailyStats.limit}`}>
-              Creados hoy: {dailyStats.used} / {dailyStats.limit === 0 ? 'Sin límite' : dailyStats.limit}
-            </div>
-          )}
-          {permissions.canCreate && (
+          {canCreateOrder() && (
             <button onClick={handleCreateClick} className="pedidos-create-btn">
               + Crear Pedido
             </button>
@@ -468,6 +445,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
         </div>
       </div>
 
+      {/* Tabla de pedidos */}
       <div className="pedidos-table-wrapper">
         <table className="pedidos-table">
           <thead>
@@ -482,65 +460,64 @@ export function OrderList({ currentAdminId, currentUserRole }) {
             </tr>
           </thead>
           <tbody>
-            {currentOrders.map((order, index) => {
-              const canEdit = canEditOrder(order);
-              const canDelete = canDeleteOrder(order);
-              
-              return (
-                <tr key={order.id}>
-                  <td data-label="#">{indexOfFirstOrder + index + 1}</td>
-                  <td data-label="Núm. Pedido" className="pedidos-order-number">
-                    {order.order_number || `ORD-${order.id}`}
-                  </td>
-                  <td data-label="Cliente">
-                    <div className="pedidos-customer-info">
-                      <strong>{order.customer_name}</strong>
-                      <small>{order.customer_email}</small>
-                    </div>
-                  </td>
-                  <td data-label="Total" className="pedidos-order-total">
-                    {formatCurrency(order.total)}
-                  </td>
-                  <td data-label="Estado">{getStatusBadge(order.status)}</td>
-                  <td data-label="Fecha">{formatDate(order.created_at)}</td>
-                  <td data-label="Acciones" className="pedidos-actions-cell">
-                    <button 
-                      onClick={() => handleView(order)} 
-                      className="pedidos-view-btn"
-                      title="Ver detalles"
-                    >
-                      <FaEye /> Ver
-                    </button>
-                    <button 
-                      onClick={() => handleEdit(order)} 
-                      className={`pedidos-edit-btn ${!canEdit ? 'pedidos-disabled-btn' : ''}`}
-                      disabled={!canEdit}
-                      title="Editar"
-                    >
-                      <FaEdit /> Editar
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteClick(order)} 
-                      className={`pedidos-delete-btn ${!canDelete ? 'pedidos-disabled-btn' : ''}`}
-                      disabled={!canDelete}
-                      title="Eliminar"
-                    >
-                      <FaTrash /> Eliminar
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+            {currentOrders.length === 0 ? null : (
+              currentOrders.map((order, index) => {
+                const canEdit = canEditOrder(order);
+                const canDelete = canDeleteOrder(order);
+                
+                return (
+                  <tr key={order.id}>
+                    <td data-label="#">{indexOfFirstOrder + index + 1}</td>
+                    <td data-label="Núm. Pedido" className="pedidos-order-number">
+                      {order.order_number || `ORD-${order.id}`}
+                    </td>
+                    <td data-label="Cliente">
+                      <div className="pedidos-customer-info">
+                        <strong>{order.customer_name}</strong>
+                        <small>{order.customer_email}</small>
+                      </div>
+                    </td>
+                    <td data-label="Total" className="pedidos-order-total">
+                      {formatCurrency(order.total)}
+                    </td>
+                    <td data-label="Estado">{getStatusBadge(order.status)}</td>
+                    <td data-label="Fecha">{formatDate(order.created_at)}</td>
+                    <td data-label="Acciones" className="pedidos-actions-cell">
+                      <button onClick={() => handleView(order)} className="pedidos-view-btn" title="Ver">
+                        <FaEye /> Ver
+                      </button>
+                      <button 
+                        onClick={() => handleEdit(order)} 
+                        className={`pedidos-edit-btn ${!canEdit ? 'pedidos-disabled-btn' : ''}`}
+                        disabled={!canEdit}
+                        title={!canEdit ? 'No tienes permiso para editar' : 'Editar'}
+                      >
+                        <FaEdit /> Editar
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteClick(order)} 
+                        className={`pedidos-delete-btn ${!canDelete ? 'pedidos-disabled-btn' : ''}`}
+                        disabled={!canDelete}
+                        title={!canDelete ? 'No tienes permiso para eliminar' : 'Eliminar'}
+                      >
+                        <FaTrash /> Eliminar
+                      </button>
+                    </td>
+                  </tr>);
+              })
+            )}
           </tbody>
         </table>
       </div>
 
-      {filteredOrders.length === 0 && (
+      {/* Solo mostrar cuando NO hay pedidos en el sistema */}
+      {orders.length === 0 && (
         <div className="pedidos-empty">
-          <p>No se encontraron pedidos</p>
+          <p>No hay pedidos en el sistema</p>
         </div>
       )}
 
+      {/* Paginación */}
       {filteredOrders.length > ordersPerPage && (
         <div className="pedidos-pagination">
           <div className="pedidos-pagination-info">
@@ -554,6 +531,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
         </div>
       )}
 
+      {/* Modales */}
       <CreateOrderModal 
         isOpen={isCreateModalOpen} 
         onClose={() => setIsCreateModalOpen(false)} 
@@ -564,10 +542,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
       
       <EditOrderModal 
         isOpen={isEditModalOpen} 
-        onClose={() => { 
-          setIsEditModalOpen(false); 
-          setSelectedOrder(null); 
-        }} 
+        onClose={() => { setIsEditModalOpen(false); setSelectedOrder(null); }} 
         onOrderUpdated={handleOrderUpdated} 
         order={selectedOrder} 
         currentUserRole={currentUserRole}
@@ -576,21 +551,19 @@ export function OrderList({ currentAdminId, currentUserRole }) {
 
       <ViewOrderModal 
         isOpen={isViewModalOpen} 
-        onClose={() => { 
-          setIsViewModalOpen(false); 
-          setSelectedOrder(null); 
-        }} 
+        onClose={() => { setIsViewModalOpen(false); setSelectedOrder(null); }} 
         order={selectedOrder} 
       />
 
+      {/* Modal de confirmación de eliminación */}
       {showConfirmModal && (
         <div className="pedidos-modal-overlay" onClick={() => setShowConfirmModal(false)}>
           <div className="pedidos-modal-container" onClick={(e) => e.stopPropagation()}>
             <div className="pedidos-modal-header"><h3>Confirmar Eliminación</h3></div>
             <div className="pedidos-modal-body">
               <p>¿Estás seguro de que deseas eliminar este pedido?</p>
-              <p className="pedidos-modal-item"><strong>{orderToDelete?.order_number || `Pedido #${orderToDelete?.id}`}</strong></p>
-              <p className="pedidos-modal-item">Cliente: {orderToDelete?.customer_name}</p>
+              <p><strong>{orderToDelete?.order_number || `Pedido #${orderToDelete?.id}`}</strong></p>
+              <p>Cliente: {orderToDelete?.customer_name}</p>
               <p className="pedidos-modal-warning">Esta acción no se puede deshacer.</p>
             </div>
             <div className="pedidos-modal-footer">
@@ -603,6 +576,7 @@ export function OrderList({ currentAdminId, currentUserRole }) {
         </div>
       )}
 
+      {/* Modal de éxito */}
       {showSuccessModal && (
         <div className="pedidos-success-overlay">
           <div className="pedidos-success-container">

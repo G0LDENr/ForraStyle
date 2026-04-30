@@ -268,8 +268,10 @@ export const AdminPermissionModel = {
   async getOrderPermissions(adminId) {
     try {
       const permissions = await this.getByAdminId(adminId);
+      console.log('📊 getOrderPermissions - datos:', permissions);
       
       if (!permissions) {
+        console.log('⚠️ No hay permisos');
         return {
           canCreate: false,
           canEdit: false,
@@ -284,6 +286,7 @@ export const AdminPermissionModel = {
       }
       
       const today = new Date().toISOString().split('T')[0];
+      
       let currentDailyCount = permissions.order_current_count || 0;
       if (permissions.order_last_reset !== today) {
         currentDailyCount = 0;
@@ -295,18 +298,18 @@ export const AdminPermissionModel = {
       }
       
       return {
-        canCreate: permissions.can_create_orders || false,
-        canEdit: permissions.can_edit_orders || false,
-        canDelete: permissions.can_delete_orders || false,
-        canEditAllOrders: permissions.can_edit_all_orders || false,
-        canDeleteAllOrders: permissions.can_delete_all_orders || false,
+        canCreate: permissions.can_create_orders === true,
+        canEdit: permissions.can_edit_orders === true,
+        canDelete: permissions.can_delete_orders === true,
+        canEditAllOrders: permissions.can_edit_all_orders === true,
+        canDeleteAllOrders: permissions.can_delete_all_orders === true,
         dailyLimit: permissions.order_daily_limit || 0,
         currentDailyCount: currentDailyCount,
         editDailyLimit: permissions.order_edit_daily_limit || 0,
         currentEditCount: currentEditCount
       };
     } catch (error) {
-      console.error('Error en getOrderPermissions:', error);
+      console.error('Error:', error);
       return null;
     }
   },

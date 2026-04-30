@@ -3,7 +3,15 @@ import { FaSave, FaTimes, FaPlus, FaEdit, FaTrash, FaExclamationTriangle, FaInfi
 import { UserController } from '../../controllers/UserController';
 import '../../css/admin/edit-permissions.css';
 
-const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, currentUserRole }) => {
+const EditPermissionsModal = ({ 
+  isOpen, 
+  onClose, 
+  onSave, 
+  admin, 
+  permissions, 
+  currentUserRole,
+  initialTab = 'users'
+}) => {
   const defaultPermissions = {
     createUsers: { enabled: false, dailyLimit: 0 },
     editUsers: { enabled: false, canEditAdmins: false, dailyLimit: 0 },
@@ -18,11 +26,12 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('users');
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   useEffect(() => {
     if (isOpen && permissions) {
       console.log('📝 Inicializando modal con permisos:', permissions);
+      console.log('📌 Pestaña inicial:', initialTab);
       setTempPermissions({
         createUsers: { 
           enabled: permissions.createUsers?.enabled || false, 
@@ -52,8 +61,10 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
           canDeleteAllOrders: permissions.deleteOrders?.canDeleteAllOrders || false 
         }
       });
+      // Establecer la pestaña activa cuando se abre el modal
+      setActiveTab(initialTab);
     }
-  }, [isOpen, permissions]);
+  }, [isOpen, permissions, initialTab]);
 
   if (!isOpen) return null;
 
@@ -156,13 +167,13 @@ const EditPermissionsModal = ({ isOpen, onClose, onSave, admin, permissions, cur
             className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
           >
-            👥 Permisos de Usuarios
+            Permisos de Usuarios
           </button>
           <button 
             className={`tab-btn ${activeTab === 'orders' ? 'active' : ''}`}
             onClick={() => setActiveTab('orders')}
           >
-            🛒 Permisos de Pedidos
+            <FaShoppingCart /> Permisos de Pedidos
           </button>
         </div>
 

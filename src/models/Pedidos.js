@@ -29,53 +29,62 @@ export const OrderModel = {
   },
 
   async generateOrderNumber() {
-  // Obtener el último número de pedido
-  const { data, error } = await supabase
-    .from('orders')
-    .select('order_number')
-    .order('created_at', { ascending: false })
-    .limit(1)
-  
-  if (error) throw error
-  
-  let lastNumber = 0
-  
-  if (data && data.length > 0) {
-    // Extraer el número después del guión
-    const parts = data[0].order_number.split('-')
-    if (parts.length === 2) {
-      lastNumber = parseInt(parts[1]) || 0
+    // Obtener el último número de pedido
+    const { data, error } = await supabase
+      .from('orders')
+      .select('order_number')
+      .order('created_at', { ascending: false })
+      .limit(1)
+    
+    if (error) throw error
+    
+    let lastNumber = 0
+    
+    if (data && data.length > 0) {
+      // Extraer el número después del guión
+      const parts = data[0].order_number.split('-')
+      if (parts.length === 2) {
+        lastNumber = parseInt(parts[1]) || 0
+      }
     }
-  }
-  
-  // Incrementar y formatear
-  const newNumber = (lastNumber + 1).toString().padStart(6, '0')
-  const orderNumber = `ORD-${newNumber}`
-  
-  // Verificar que no exista (por si acaso)
-  const { data: existing, error: checkError } = await supabase
-    .from('orders')
-    .select('id')
-    .eq('order_number', orderNumber)
-    .maybeSingle()
-  
-  if (checkError) throw checkError
-  
-  // Si ya existe, recursivamente generar otro
-  if (existing) {
-    console.log('⚠️ Número duplicado, generando otro:', orderNumber)
-    return await this.generateOrderNumber()
-  }
-  
-  console.log('✅ Número de pedido generado:', orderNumber)
-  return orderNumber
-},
+    
+    // Incrementar y formatear
+    const newNumber = (lastNumber + 1).toString().padStart(6, '0')
+    const orderNumber = `ORD-${newNumber}`
+    
+    // Verificar que no exista (por si acaso)
+    const { data: existing, error: checkError } = await supabase
+      .from('orders')
+      .select('id')
+      .eq('order_number', orderNumber)
+      .maybeSingle()
+    
+    if (checkError) throw checkError
+    
+    // Si ya existe, recursivamente generar otro
+    if (existing) {
+      console.log('⚠️ Número duplicado, generando otro:', orderNumber)
+      return await this.generateOrderNumber()
+    }
+    
+    console.log('✅ Número de pedido generado:', orderNumber)
+    return orderNumber
+  },
 
   async create(orderData) {
     const { 
       order_number, customer_name, customer_email, customer_phone, 
-      customer_address, items, total, status, created_by, created_at 
+      customer_address, items, total, status, created_by, created_at,
+      shipping_method, shipping_cost, payment_evidence  // <--- AGREGAR ESTOS CAMPOS
     } = orderData
+    
+    console.log('📝 Creando pedido con:', {
+      order_number,
+      customer_name,
+      shipping_method,
+      shipping_cost,
+      has_payment_evidence: !!payment_evidence
+    });
     
     // Primero insertar el pedido
     const { data: order, error: orderError } = await supabase
@@ -89,12 +98,18 @@ export const OrderModel = {
         total,
         status,
         created_by,
-        created_at
+        created_at,
+        shipping_method: shipping_method || 'pickup',  // <--- AGREGAR
+        shipping_cost: shipping_cost || 0,             // <--- AGREGAR
+        payment_evidence: payment_evidence || null    // <--- AGREGAR
       }])
       .select()
       .single()
     
-    if (orderError) throw orderError
+    if (orderError) {
+      console.error('❌ Error al insertar pedido:', orderError);
+      throw orderError;
+    }
     
     // Luego insertar los items
     if (items && items.length > 0) {
@@ -110,9 +125,13 @@ export const OrderModel = {
         .from('order_items')
         .insert(orderItems)
       
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        console.error('❌ Error al insertar items:', itemsError);
+        throw itemsError;
+      }
     }
     
+    console.log('✅ Pedido creado exitosamente, ID:', order.id);
     return await this.getById(order.id)
   },
 

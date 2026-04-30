@@ -163,33 +163,51 @@ export const OrderController = {
     }
   },
 
-  async deleteOrder(id, currentAdminId, currentUserRole) {
+  // ✅ MÉTODO DELETE ORDER - AGREGAR ESTE
+  async deleteOrder(orderId, currentAdminId, currentUserRole) {
     try {
-      const targetOrder = await OrderModel.getById(id)
+      console.log('🗑️ Eliminando pedido:', { orderId, currentAdminId, currentUserRole });
+      
+      // Verificar que el pedido existe
+      const targetOrder = await OrderModel.getById(orderId);
       
       if (!targetOrder) {
-        return { success: false, error: 'Pedido no encontrado' }
+        return { success: false, error: 'Pedido no encontrado' };
       }
       
-      const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole)
+      // Obtener permisos
+      const permissions = await this.getOrderPermissions(currentAdminId, currentUserRole);
       
+      // Verificar si tiene permiso para eliminar
       if (!permissions.canDelete) {
-        return { success: false, error: 'No tienes permiso para eliminar pedidos' }
+        return { success: false, error: 'No tienes permiso para eliminar pedidos' };
       }
       
-      const canDeleteThisOrder = permissions.canDeleteAllOrders || targetOrder.created_by === currentAdminId
+      // Verificar si puede eliminar este pedido específico
+      const canDeleteThisOrder = permissions.canDeleteAllOrders || targetOrder.created_by === currentAdminId;
       if (!canDeleteThisOrder) {
-        return { success: false, error: 'No tienes permiso para eliminar este pedido' }
+        return { success: false, error: 'No tienes permiso para eliminar este pedido (solo puedes eliminar los que tú creaste)' };
       }
       
+      // No permitir eliminar pedidos entregados
       if (targetOrder.status === 'entregado') {
-        return { success: false, error: 'No se pueden eliminar pedidos entregados' }
+        return { success: false, error: 'No se pueden eliminar pedidos entregados' };
       }
       
-      await OrderModel.delete(id)
-      return { success: true }
+      // No permitir eliminar pedidos cancelados
+      if (targetOrder.status === 'cancelado') {
+        return { success: false, error: 'No se pueden eliminar pedidos cancelados' };
+      }
+      
+      // Eliminar el pedido usando el modelo
+      const result = await OrderModel.delete(orderId);
+      
+      console.log(`✅ Pedido ${orderId} eliminado exitosamente`);
+      return { success: true, data: result };
+      
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('❌ Error en deleteOrder:', error);
+      return { success: false, error: error.message };
     }
   },
 
@@ -256,7 +274,6 @@ export const OrderController = {
         return { success: false, error: 'No tienes permisos para actualizar permisos de pedidos' };
       }
       
-      // Asegurar que los parámetros tengan los nombres correctos
       const orderPermissions = {
         canCreateOrders: permissions.canCreateOrders !== undefined ? permissions.canCreateOrders : false,
         orderDailyLimit: permissions.orderDailyLimit !== undefined ? permissions.orderDailyLimit : 0,

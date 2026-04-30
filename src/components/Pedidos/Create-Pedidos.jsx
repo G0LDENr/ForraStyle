@@ -3,8 +3,8 @@ import { UserController } from '../../controllers/UserController';
 import Step1PersonalData from './Pasos/Step1PersonalData';
 import Step2Products from './Pasos/Step2Products';
 import Step3Address from './Pasos/Step3Address';
-import Step4ShippingMethod from './Pasos/Step4ShippingMethod';
-import Step5Payment from './Pasos/Step5Payment';
+import Step4Payment from './Pasos/Step4Payment';
+import Step5Summary from './Pasos/Step5Summary';
 import '../../css/pedidos/create-pedidos.css';
 import { FaSpinner, FaArrowLeft, FaArrowRight, FaCheck } from 'react-icons/fa';
 
@@ -20,13 +20,12 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
     customer_email: '',
     customer_phone: '',
     products: [],
+    shipping_method: 'pickup',
+    shipping_cost: 0,
     address: '',
     city: '',
     state: '',
     zip_code: '',
-    shipping_method: 'pickup',
-    shipping_cost: 0,
-    payment_method: 'transfer',
     payment_evidence: null,
     total: 0,
     notes: ''
@@ -50,14 +49,14 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
     }
   }, [isOpen, currentAdminId, currentUserRole]);
 
+  // Calcular total cuando cambian productos o costo de envío
   useEffect(() => {
-  const productsTotal = formData.products.reduce((sum, product) => sum + (product.total || 70), 0);
-  const total = productsTotal + (formData.shipping_method === 'delivery' ? formData.shipping_cost : 0);
-  if (formData.total !== total) {
-    setFormData(prev => ({ ...prev, total }));
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.products, formData.shipping_method, formData.shipping_cost]);
+    const productsTotal = formData.products.reduce((sum, product) => sum + (product.total || 70), 0);
+    const total = productsTotal + (formData.shipping_cost || 0);
+    if (formData.total !== total) {
+      setFormData(prev => ({ ...prev, total }));
+    }
+  }, [formData.products, formData.shipping_cost, formData.total]);
 
   const updateFormData = (newData) => {
     setFormData(prev => ({ ...prev, ...newData }));
@@ -77,6 +76,7 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
     try {
       const { OrderController } = await import('../../controllers/OrdenesController');
       
+      // Validaciones
       if (!formData.customer_name || !formData.customer_name.trim()) {
         alert('El nombre del cliente es requerido');
         setLoading(false);
@@ -95,13 +95,30 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
         return;
       }
       
-      const productsTotal = formData.products.reduce((sum, product) => sum + (product.total || 70), 0);
-      const shippingCost = formData.shipping_method === 'delivery' ? (formData.shipping_cost || 0) : 0;
-      const total = productsTotal + shippingCost;
-      
-      let customer_address = 'Recoger en tienda - Av. Principal #123, Centro';
+      // Validar dirección si es envío a domicilio
       if (formData.shipping_method === 'delivery') {
-        customer_address = `${formData.address || ''}, ${formData.city || ''}, ${formData.state || ''}, CP: ${formData.zip_code || ''}`;
+        if (!formData.address || !formData.city || !formData.state || !formData.zip_code) {
+          alert('Debes completar la dirección de envío');
+          setLoading(false);
+          return;
+        }
+      }
+      
+      // Validar comprobante de pago
+      if (!formData.payment_evidence) {
+        alert('Debes subir el comprobante de pago');
+        setLoading(false);
+        return;
+      }
+      
+      const productsTotal = formData.products.reduce((sum, product) => sum + (product.total || 70), 0);
+      const total = productsTotal + (formData.shipping_cost || 0);
+      
+      let customer_address = '';
+      if (formData.shipping_method === 'delivery') {
+        customer_address = `${formData.address}, ${formData.city}, ${formData.state}, CP: ${formData.zip_code}`;
+      } else {
+        customer_address = 'Recoger en tienda - Av. Principal #123, Centro, CDMX';
       }
       
       const processedProducts = formData.products.map((product, index) => {
@@ -147,8 +164,15 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
         payment_evidence: formData.payment_evidence,
         notes: formData.notes || '',
         shipping_method: formData.shipping_method,
-        shipping_cost: shippingCost
+        shipping_cost: formData.shipping_cost || 0
       };
+      
+      console.log('📤 Enviando a createOrder:', {
+        shipping_method: orderData.shipping_method,
+        shipping_cost: orderData.shipping_cost,
+        has_payment_evidence: !!orderData.payment_evidence,
+        payment_evidence_length: orderData.payment_evidence?.length
+      });
       
       const result = await OrderController.createOrder(orderData, currentAdminId, currentUserRole);
       
@@ -176,13 +200,12 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
       customer_email: '',
       customer_phone: '',
       products: [],
+      shipping_method: 'pickup',
+      shipping_cost: 0,
       address: '',
       city: '',
       state: '',
       zip_code: '',
-      shipping_method: 'pickup',
-      shipping_cost: 0,
-      payment_method: 'transfer',
       payment_evidence: null,
       total: 0,
       notes: ''
@@ -198,9 +221,9 @@ export function CreateOrderModal({ isOpen, onClose, onOrderCreated, currentUserR
       case 3:
         return <Step3Address formData={formData} updateFormData={updateFormData} />;
       case 4:
-        return <Step4ShippingMethod formData={formData} updateFormData={updateFormData} />;
+        return <Step4Payment formData={formData} updateFormData={updateFormData} />;
       case 5:
-        return <Step5Payment formData={formData} updateFormData={updateFormData} />;
+        return <Step5Summary formData={formData} />;
       default:
         return null;
     }

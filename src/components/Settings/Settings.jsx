@@ -1,5 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaCog, FaUserShield, FaDollarSign, FaTruck, FaUserPlus, FaSpinner } from 'react-icons/fa';
+import { 
+  FaCog, 
+  FaUserShield, 
+  FaDollarSign, 
+  FaTruck, 
+  FaSpinner, 
+  FaShoppingCart, 
+  FaMoneyBillWave,
+  FaStore
+} from 'react-icons/fa';
 import { AdminEarningsModel } from '../../models/AdminEarningsModel';
 import { UserController } from '../../controllers/UserController';
 import { OrderController } from '../../controllers/OrdenesController';
@@ -12,24 +21,32 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
   // Estados para ganancias (solo para admins)
   const [earningsConfig, setEarningsConfig] = useState(null);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
+  const [orderStats, setOrderStats] = useState({
+    totalOrders: 0,
+    totalSales: 0,
+    totalShipping: 0,
+    commissionBySales: 0,
+    commissionByShipping: 0,
+    totalCommission: 0,
+    ordersWithShipping: 0,
+    ordersWithoutShipping: 0
+  });
+  const [loadingOrderStats, setLoadingOrderStats] = useState(false);
 
   const loadAdminPermissions = useCallback(async () => {
     if (!userData?.id) return;
     
     setLoadingPermissions(true);
     try {
-      // Cargar permisos de usuarios
       const userPermissions = await UserController.getUserPermissions(userData.id, userData.rol);
       console.log('Permisos de usuario cargados:', userPermissions);
       
-      // Cargar permisos de pedidos
       const orderPermissionsResult = await OrderController.getAdminOrderPermissions(userData.id, userData.rol);
       const orderPermissions = orderPermissionsResult.success ? orderPermissionsResult.data : {};
       console.log('Permisos de pedidos cargados:', orderPermissions);
       
       if (userPermissions) {
         setAdminPermissions({
-          // Permisos de usuarios
           createUsers: { 
             enabled: userPermissions.canCreate, 
             dailyLimit: userPermissions.dailyLimit || 0,
@@ -46,7 +63,6 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
             canDeleteAdmins: userPermissions.canDeleteAdmins,
             canDeleteSuperAdmin: userPermissions.canDeleteSuperAdmin
           },
-          // Permisos de pedidos
           createOrders: {
             enabled: orderPermissions.canCreateOrders || false,
             dailyLimit: orderPermissions.orderDailyLimit || 0,
@@ -102,12 +118,88 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
     }
   }, [userData?.id]);
 
+  const loadOrderStats = useCallback(async () => {
+    if (!userData?.id || userData?.rol !== 1) return;
+    
+    setLoadingOrderStats(true);
+    try {
+      const ordersResult = await OrderController.getOrders(userData.id, userData.rol);
+      
+      if (ordersResult.success && ordersResult.data) {
+        const adminOrders = ordersResult.data;
+        
+        // Obtener porcentajes de la configuración (default 5%)
+        const percentageBySale = earningsConfig?.percentage_by_sale || 5;
+        const percentageByShipping = earningsConfig?.percentage_by_shipping || 5;
+        
+        let totalSales = 0;
+        let totalShipping = 0;
+        let commissionBySales = 0;
+        let commissionByShipping = 0;
+        let ordersWithShipping = 0;
+        let ordersWithoutShipping = 0;
+        
+        // Calcular por cada pedido individualmente
+        adminOrders.forEach(order => {
+          // Usar subtotal o total correctamente
+          const subtotal = parseFloat(order.subtotal) || parseFloat(order.total) || 0;
+          
+          // Verificar si tiene envío basado en shipping_method y shipping_cost
+          const hasShipping = order.shipping_method === 'delivery' && parseFloat(order.shipping_cost) > 0;
+          const shippingCost = hasShipping ? parseFloat(order.shipping_cost) : 0;
+          
+          totalSales += subtotal;
+          
+          // Comisión por compra (siempre aplica)
+          commissionBySales += subtotal * (percentageBySale / 100);
+          
+          // Comisión por envío (solo si tiene envío válido)
+          if (hasShipping) {
+            totalShipping += shippingCost;
+            commissionByShipping += shippingCost * (percentageByShipping / 100);
+            ordersWithShipping++;
+          } else {
+            ordersWithoutShipping++;
+          }
+          
+          console.log(`📊 Pedido ${order.order_number}: subtotal=${subtotal}, hasShipping=${hasShipping}, shippingCost=${shippingCost}`);
+        });
+        
+        const totalCommission = commissionBySales + commissionByShipping;
+        
+        console.log(`📊 Resumen: Pedidos con envío=${ordersWithShipping}, sin envío=${ordersWithoutShipping}`);
+        console.log(`📊 Comisión por ventas: ${commissionBySales}, Comisión por envíos: ${commissionByShipping}, Total: ${totalCommission}`);
+        
+        setOrderStats({
+          totalOrders: adminOrders.length,
+          totalSales,
+          totalShipping,
+          commissionBySales,
+          commissionByShipping,
+          totalCommission,
+          ordersWithShipping,
+          ordersWithoutShipping
+        });
+      }
+    } catch (error) {
+      console.error('Error cargando estadísticas de pedidos:', error);
+    } finally {
+      setLoadingOrderStats(false);
+    }
+  }, [userData?.id, userData?.rol, earningsConfig?.percentage_by_sale, earningsConfig?.percentage_by_shipping]);
+
   useEffect(() => {
     if (userData?.rol === 1) {
       loadAdminPermissions();
       loadEarningsConfig();
     }
   }, [userData, loadAdminPermissions, loadEarningsConfig]);
+
+  useEffect(() => {
+    if (userData?.rol === 1 && earningsConfig) {
+      loadOrderStats();
+    }
+  }, [userData?.rol, earningsConfig, loadOrderStats]);
 
   const getCreateUsersLimitText = () => {
     const limit = adminPermissions?.createUsers?.dailyLimit;
@@ -161,7 +253,10 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
     return `${current}/${limit} editados hoy`;
   };
 
-  // Validar que userData existe
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount || 0);
+  };
+
   if (!userData) {
     return (
       <div className="settings-container">
@@ -185,7 +280,6 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
       </div>
 
       <div className="settings-card">
-        {/* Información del usuario actual */}
         <div className="settings-section">
           <h3 className="settings-section-title">
             <FaUserShield className="settings-section-icon" />
@@ -215,39 +309,95 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
               Mis Ganancias
             </h3>
             
-            {loadingEarnings ? (
+            {loadingEarnings || loadingOrderStats ? (
               <div className="settings-loading">
                 <FaSpinner className="spinner" />
                 <span>Cargando...</span>
               </div>
             ) : (
               <>
+                {/* Tarjetas de configuración de ganancias */}
                 <div className="settings-earnings-summary">
+                  <div className="settings-earnings-card">
+                    <div className="settings-earnings-icon"><FaStore /></div>
+                    <div className="settings-earnings-info">
+                      <label>Comisión por Compra</label>
+                      <p>{earningsConfig?.percentage_by_sale || 5}%</p>
+                      <small>Siempre aplica</small>
+                    </div>
+                  </div>
                   <div className="settings-earnings-card">
                     <div className="settings-earnings-icon"><FaTruck /></div>
                     <div className="settings-earnings-info">
-                      <label>Porcentaje por Envio</label>
-                      <p>{earningsConfig?.percentage_by_ship || 0}%</p>
+                      <label>Comisión por Envío</label>
+                      <p>{earningsConfig?.percentage_by_shipping || 5}%</p>
+                      <small>Solo si hay envío</small>
                     </div>
                   </div>
                   <div className="settings-earnings-card">
-                    <div className="settings-earnings-icon"><FaUserPlus /></div>
-                    <div className="settings-earnings-info">
-                      <label>Porcentaje por Empleado</label>
-                      <p>{earningsConfig?.percentage_by_employee || 0}%</p>
-                    </div>
-                  </div>
-                  <div className="settings-earnings-card">
-                    <div className="settings-earnings-icon"><FaDollarSign /></div>
+                    <div className="settings-earnings-icon"><FaMoneyBillWave /></div>
                     <div className="settings-earnings-info">
                       <label>Ganancias Totales</label>
-                      <p>${(earningsConfig?.total_earnings || 0).toFixed(2)}</p>
+                      <p>{formatCurrency(orderStats.totalCommission)}</p>
                     </div>
                   </div>
                 </div>
 
+                {/* Desglose de ganancias */}
+                <div className="settings-earnings-detail">
+                  <h4 className="settings-subsection-title">Desglose de Ganancias</h4>
+                  
+                  <div className="settings-earnings-detail-item">
+                    <span>Total de pedidos:</span>
+                    <strong>{orderStats.totalOrders}</strong>
+                  </div>
+                  <div className="settings-earnings-detail-item">
+                    <span>📦 Pedidos con envío:</span>
+                    <strong>{orderStats.ordersWithShipping}</strong>
+                  </div>
+                  <div className="settings-earnings-detail-item">
+                    <span>🏪 Pedidos sin envío (recoge en tienda):</span>
+                    <strong>{orderStats.ordersWithoutShipping}</strong>
+                  </div>
+                  
+                  <div className="settings-earnings-divider"></div>
+                  
+                  <div className="settings-earnings-detail-item">
+                    <span>Total en ventas:</span>
+                    <strong>{formatCurrency(orderStats.totalSales)}</strong>
+                  </div>
+                  <div className="settings-earnings-detail-item">
+                    <span>Comisión por ventas ({earningsConfig?.percentage_by_sale || 5}%):</span>
+                    <strong>{formatCurrency(orderStats.commissionBySales)}</strong>
+                    <small className="info-text">✓ Siempre aplica</small>
+                  </div>
+                  
+                  {orderStats.totalShipping > 0 && (
+                    <>
+                      <div className="settings-earnings-detail-item">
+                        <span>Total en envíos:</span>
+                        <strong>{formatCurrency(orderStats.totalShipping)}</strong>
+                      </div>
+                      <div className="settings-earnings-detail-item">
+                        <span>Comisión por envíos ({earningsConfig?.percentage_by_shipping || 5}%):</span>
+                        <strong>{formatCurrency(orderStats.commissionByShipping)}</strong>
+                        <small className="info-text">✓ Solo pedidos con envío</small>
+                      </div>
+                    </>
+                  )}
+                  
+                  <div className="settings-earnings-detail-item total">
+                    <span>Total de ganancias:</span>
+                    <strong className="commission-total">{formatCurrency(orderStats.totalCommission)}</strong>
+                  </div>
+                </div>
+
                 <div className="settings-earnings-note">
-                  <p>Nota: Tus ganancias se calculan automaticamente segun los envios y empleados que registras.</p>
+                  <p>📊 <strong>¿Cómo se calculan tus ganancias?</strong></p>
+                  <p>• <strong>Comisión por Compra:</strong> {earningsConfig?.percentage_by_sale || 5}% del total de CADA pedido (productos + servicios).</p>
+                  <p>• <strong>Comisión por Envío:</strong> {earningsConfig?.percentage_by_shipping || 5}% del costo de envío, SOLO si el pedido incluye envío a domicilio.</p>
+                  <p>• <strong>Ejemplo:</strong> Pedido de $100 con envío de $50 → Ganas $5 (compra) + $2.50 (envío) = <strong>$7.50</strong></p>
+                  <p>• <strong>Ejemplo:</strong> Pedido de $100 sin envío (recoge en tienda) → Ganas solo <strong>$5</strong></p>
                 </div>
               </>
             )}
@@ -269,8 +419,8 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
               </div>
             ) : (
               <>
-                {/* Tabla de permisos de usuarios */}
                 <h4 className="settings-subsection-title">
+                  <FaUserShield className="settings-subsection-icon" />
                   Permisos de Usuarios
                 </h4>
                 <div className="settings-permissions-table-container">
@@ -336,8 +486,8 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
                   </table>
                 </div>
 
-                {/* Tabla de permisos de pedidos */}
                 <h4 className="settings-subsection-title">
+                  <FaShoppingCart className="settings-subsection-icon" />
                   Permisos de Pedidos
                 </h4>
                 <div className="settings-permissions-table-container">
@@ -402,7 +552,6 @@ export function SettingsManager({ userData, users = [], orders = [] }) {
           </div>
         )}
 
-        {/* Información del sistema */}
         <div className="settings-section">
           <h3 className="settings-section-title">
             <FaCog className="settings-section-icon" />
