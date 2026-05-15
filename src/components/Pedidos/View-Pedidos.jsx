@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FaPrint, FaPalette, FaBook, FaTag, FaImage, FaRulerCombined, FaEye, FaTruck, FaMapMarkerAlt, FaMoneyBillWave, FaStore } from 'react-icons/fa';
 import '../../css/pedidos/view-pedidos.css';
+import '../../css/pedidos/step2-notebook-customization.css'; // Importamos el CSS de la libreta
 
 export function ViewOrderModal({ isOpen, onClose, order }) {
   const [showLabelModal, setShowLabelModal] = useState(false);
@@ -9,6 +10,7 @@ export function ViewOrderModal({ isOpen, onClose, order }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [showShippingModal, setShowShippingModal] = useState(false);
+  const [openNotebookId, setOpenNotebookId] = useState(null); // Para controlar qué libreta está abierta
 
   const formatDate = (dateString) => {
     if (!dateString) return '—';
@@ -87,6 +89,228 @@ export function ViewOrderModal({ isOpen, onClose, order }) {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  // Función para obtener los anillos de espiral
+  const getSpiralRings = () => {
+    const rings = [];
+    const ringCount = 14;
+    for (let i = 0; i < ringCount; i++) {
+      rings.push(<div key={i} className="boock-spiral-ring"></div>);
+    }
+    return rings;
+  };
+
+  // Función para ajustar color
+  const adjustColor = (color, percent) => {
+    if (!color || color === '#ffffff') return '#c4b5fd';
+    if (color.startsWith('#')) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        
+        const newR = Math.min(255, Math.max(0, r + (r * percent / 100)));
+        const newG = Math.min(255, Math.max(0, g + (g * percent / 100)));
+        const newB = Math.min(255, Math.max(0, b + (b * percent / 100)));
+        
+        return `#${Math.round(newR).toString(16).padStart(2, '0')}${Math.round(newG).toString(16).padStart(2, '0')}${Math.round(newB).toString(16).padStart(2, '0')}`;
+    }
+    return '#8b5cf6';
+  };
+
+  // Componente de vista previa de libreta
+  const NotebookPreview = ({ specs, itemId }) => {
+    const [isOpen, setIsOpen] = useState(openNotebookId === itemId);
+    
+    const toggleNotebook = () => {
+      const newState = !isOpen;
+      setIsOpen(newState);
+      setOpenNotebookId(newState ? itemId : null);
+    };
+
+    const frontColor = specs.colorFrontal || '#3b82f6';
+    const backColor = specs.colorTrasero || frontColor;
+    const ambosLados = specs.ambosLados || false;
+    const currentBackColor = ambosLados ? backColor : frontColor;
+    const paperType = specs.paperType || 'lined';
+    const tieneImagen = specs.hasImage && specs.imagenBase64;
+    const tieneEtiqueta = specs.hasLabel && specs.labelData;
+
+    // Renderizar páginas
+    const renderPages = () => {
+      const pages = [];
+      const pageCount = 20; // Menos páginas para la vista previa
+      
+      for (let i = 0; i < pageCount; i++) {
+        let backgroundStyle = {};
+        
+        if (paperType === 'lined') {
+          backgroundStyle = { 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='lined' patternUnits='userSpaceOnUse' width='100%25' height='28'%3E%3Cline x1='0' y1='27' x2='100%25' y2='27' stroke='%233b82f6' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23lined)'/%3E%3C/svg%3E")`,
+            backgroundColor: '#ffffff'
+          };
+        } else if (paperType === 'squared') {
+          backgroundStyle = { 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='squared' patternUnits='userSpaceOnUse' width='20' height='20'%3E%3Cline x1='0' y1='19' x2='20' y2='19' stroke='%233b82f6' stroke-width='1'/%3E%3Cline x1='19' y1='0' x2='19' y2='20' stroke='%233b82f6' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23squared)'/%3E%3C/svg%3E")`,
+            backgroundColor: '#ffffff'
+          };
+        } else if (paperType === 'squared-large') {
+          backgroundStyle = { 
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='squared-large' patternUnits='userSpaceOnUse' width='40' height='40'%3E%3Cline x1='0' y1='39' x2='40' y2='39' stroke='%233b82f6' stroke-width='1'/%3E%3Cline x1='39' y1='0' x2='39' y2='40' stroke='%233b82f6' stroke-width='1'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23squared-large)'/%3E%3C/svg%3E")`,
+            backgroundColor: '#ffffff'
+          };
+        } else {
+          backgroundStyle = { backgroundColor: '#ffffff' };
+        }
+        
+        pages.push(
+          <div 
+            key={i} 
+            className="boock-notebook-page"
+            style={{ 
+              transform: `translateX(${i * 0.3}px)`,
+              zIndex: i,
+              ...backgroundStyle
+            }}
+          ></div>
+        );
+      }
+      return pages;
+    };
+
+    // Renderizar etiqueta
+    const renderLabel = () => {
+      if (!tieneEtiqueta) return null;
+      const etiqueta = specs.labelData;
+      if (!etiqueta.show) return null;
+
+      const getStyle = () => {
+        switch(etiqueta.diseño) {
+          case 'simple':
+            return {
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              color: '#1f2937'
+            };
+          case 'colorful':
+            return {
+              backgroundColor: etiqueta.colorFondo || '#3b82f6',
+              border: 'none',
+              color: etiqueta.colorTexto || '#ffffff'
+            };
+          case 'white-outline':
+            return {
+              backgroundColor: 'white',
+              border: `2px solid ${etiqueta.colorBorde || '#3b82f6'}`,
+              color: '#1f2937'
+            };
+          default:
+            return {
+              backgroundColor: 'white',
+              border: '1px solid #e5e7eb',
+              color: '#1f2937'
+            };
+        }
+      };
+
+      return (
+        <div 
+          className={`boock-cover-label ${etiqueta.diseño} ${etiqueta.posicion || 'center'}`}
+          style={getStyle()}
+        >
+          <div className="boock-label-content">
+            <strong>{etiqueta.nombre || 'Sin nombre'}</strong>
+            <span>{etiqueta.materia || 'Sin materia'}</span>
+            <span className="boock-label-escuela">{etiqueta.escuela || 'Sin escuela'}</span>
+            <span className="boock-label-maestro">{etiqueta.maestro || 'Sin maestro'}</span>
+            <div className="boock-label-footer">
+              <span>{etiqueta.grado || 'Sin grado'}</span>
+              <span>{etiqueta.grupo || 'Sin grupo'}</span>
+            </div>
+          </div>
+          {etiqueta.diseño === 'white-outline' && (
+            <div className="boock-label-outline-divider" style={{ backgroundColor: etiqueta.colorBorde || '#3b82f6' }}></div>
+          )}
+        </div>
+      );
+    };
+
+    if (!isOpen) {
+      return (
+        <div className="boock-wrapper" style={{ margin: '0 auto', maxWidth: '300px' }}>
+          <div className="boock-closed" onClick={toggleNotebook} style={{ cursor: 'pointer' }}>
+            <div className="boock-cover" style={{ backgroundColor: frontColor }}>
+              <div className="boock-cover-content" style={{ position: 'relative', minHeight: '200px' }}>
+                {tieneImagen && (
+                  <img 
+                    src={specs.imagenBase64} 
+                    alt="Personalización" 
+                    className="boock-cover-image"
+                    style={{
+                      width: `${specs.imagenSize || 70}%`,
+                      top: `${specs.imagenPosition?.y || 50}%`,
+                      left: `${specs.imagenPosition?.x || 50}%`,
+                      transform: 'translate(-50%, -50%)',
+                      position: 'absolute',
+                      maxHeight: '80%',
+                      objectFit: 'contain'
+                    }}
+                  />
+                )}
+                {renderLabel()}
+              </div>
+            </div>
+            <div className="boock-spiral-binding">
+              {specs.tipoEncuadernacion === 'espiral' ? (
+                getSpiralRings()
+              ) : (
+                <div 
+                  className="boock-sewn-binding-closed"
+                  style={{ 
+                    background: `repeating-linear-gradient(180deg, ${specs.colorHilo || '#8b5cf6'}, ${specs.colorHilo || '#8b5cf6'} 6px, ${adjustColor(specs.colorHilo || '#8b5cf6', 20)} 6px, ${adjustColor(specs.colorHilo || '#8b5cf6', 20)} 12px)`
+                  }}
+                ></div>
+              )}
+            </div>
+          </div>
+          <button className="boock-toggle-btn" onClick={toggleNotebook} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+            Ver interior
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="boock-wrapper" style={{ margin: '0 auto', maxWidth: '300px' }}>
+        <div className="boock-open">
+          <div 
+            className="boock-back-cover" 
+            style={{ backgroundColor: currentBackColor }}
+          >
+            <div className="boock-back-cover-content"></div>
+          </div>
+          
+          <div className="boock-binding-center">
+            {specs.tipoEncuadernacion === 'espiral' ? (
+              <div className="boock-spiral-center">{getSpiralRings()}</div>
+            ) : (
+              <div className="boock-sewn-center">
+                <div className="boock-sewn-thread-vertical"></div>
+              </div>
+            )}
+          </div>
+          
+          <div className="boock-pages-stack">
+            <div className="boock-pages-container">
+              {renderPages()}
+            </div>
+          </div>
+        </div>
+        <button className="boock-toggle-btn" onClick={toggleNotebook} style={{ marginTop: '0.5rem', padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}>
+          Ver portada
+        </button>
+      </div>
+    );
   };
 
   if (!isOpen || !order) return null;
@@ -412,7 +636,7 @@ export function ViewOrderModal({ isOpen, onClose, order }) {
             <div style={{ margin: '1rem 0' }}>
               <h4 style={{ color: '#1e3a8a', marginBottom: '0.75rem' }}>Productos</h4>
               {order.order_items && order.order_items.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                   {order.order_items.map((item, idx) => {
                     const specs = parseSpecifications(item.product_name);
                     return (
@@ -420,6 +644,11 @@ export function ViewOrderModal({ isOpen, onClose, order }) {
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid #e5e7eb' }}>
                           <strong style={{ color: '#1e3a8a', fontSize: '1rem' }}>{specs.name || `Libreta ${idx + 1}`}</strong>
                           <span style={{ fontWeight: 'bold', color: '#059669', fontSize: '1rem' }}>{formatCurrency(item.subtotal)}</span>
+                        </div>
+                        
+                        {/* Vista previa visual de la libreta */}
+                        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'center' }}>
+                          <NotebookPreview specs={specs} itemId={idx} />
                         </div>
                         
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
