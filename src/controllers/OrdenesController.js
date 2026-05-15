@@ -6,9 +6,12 @@ export const OrderController = {
     try {
       let orders = await OrderModel.getAll()
       
-      if (currentUserRole === 1) {
+      // SOLO filtrar si NO es admin (rol 0) y NO es admin (rol 1)
+      // O sea, solo filtrar para vendedores o roles inferiores
+      if (currentUserRole !== 0 && currentUserRole !== 1) {
         orders = orders.filter(order => order.created_by === currentUserId)
       }
+      // Si es rol 0 o rol 1, NO filtrar, mostrar TODOS los pedidos
       
       return { success: true, data: orders }
     } catch (error) {
@@ -25,7 +28,8 @@ export const OrderController = {
         return { success: false, error: 'Pedido no encontrado' }
       }
       
-      if (currentUserRole === 1 && order.created_by !== currentUserId) {
+      // Permitir a admins (rol 1) y super admins (rol 0) ver cualquier pedido
+      if (currentUserRole !== 0 && currentUserRole !== 1 && order.created_by !== currentUserId) {
         return { success: false, error: 'No tienes permiso para ver este pedido' }
       }
       
@@ -102,6 +106,8 @@ export const OrderController = {
         return { success: false, error: 'No tienes permiso para editar pedidos' }
       }
       
+      // Admins (rol 0 y rol 1) pueden editar cualquier pedido si tienen canEditAllOrders
+      // o si son los creadores
       const canEditThisOrder = permissions.canEditAllOrders || targetOrder.created_by === currentAdminId
       if (!canEditThisOrder) {
         return { success: false, error: 'No tienes permiso para editar este pedido' }
@@ -151,6 +157,7 @@ export const OrderController = {
         return { success: false, error: 'No tienes permiso para modificar pedidos' }
       }
       
+      // Admins (rol 0 y rol 1) pueden modificar cualquier pedido si tienen canEditAllOrders
       const canEditThisOrder = permissions.canEditAllOrders || targetOrder.created_by === currentAdminId
       if (!canEditThisOrder) {
         return { success: false, error: 'No tienes permiso para modificar este pedido' }
@@ -163,7 +170,6 @@ export const OrderController = {
     }
   },
 
-  // ✅ MÉTODO DELETE ORDER - AGREGAR ESTE
   async deleteOrder(orderId, currentAdminId, currentUserRole) {
     try {
       console.log('🗑️ Eliminando pedido:', { orderId, currentAdminId, currentUserRole });
@@ -183,7 +189,7 @@ export const OrderController = {
         return { success: false, error: 'No tienes permiso para eliminar pedidos' };
       }
       
-      // Verificar si puede eliminar este pedido específico
+      // Admins (rol 0 y rol 1) pueden eliminar cualquier pedido si tienen canDeleteAllOrders
       const canDeleteThisOrder = permissions.canDeleteAllOrders || targetOrder.created_by === currentAdminId;
       if (!canDeleteThisOrder) {
         return { success: false, error: 'No tienes permiso para eliminar este pedido (solo puedes eliminar los que tú creaste)' };
@@ -225,6 +231,7 @@ export const OrderController = {
   async getOrderPermissions(adminId, currentUserRole) {
     console.log(`getOrderPermissions llamado - adminId: ${adminId}, currentUserRole: ${currentUserRole}`);
     
+    // SUPER ADMIN (rol 0) - todos los permisos
     if (currentUserRole === 0) {
       console.log('✅ Super Admin - todos los permisos');
       return {
@@ -240,18 +247,20 @@ export const OrderController = {
       };
     }
     
+    // ADMIN (rol 1) - permisos con límites pero puede ver/editar/eliminar TODOS los pedidos
     if (currentUserRole === 1) {
       console.log('👤 Administrador - obteniendo permisos con límites');
       const permissions = await AdminPermissionModel.getOrderPermissions(adminId);
       console.log('📦 Permisos obtenidos del modelo:', permissions);
       
       if (!permissions) {
+        // Permisos por defecto para admin si no hay configuración
         return {
-          canCreate: false,
-          canEdit: false,
-          canDelete: false,
-          canEditAllOrders: false,
-          canDeleteAllOrders: false,
+          canCreate: true,
+          canEdit: true,
+          canDelete: true,
+          canEditAllOrders: true,  // Importante: true para editar pedidos de otros
+          canDeleteAllOrders: true, // Importante: true para eliminar pedidos de otros
           dailyLimit: 0,
           currentDailyCount: 0,
           editDailyLimit: 0,
@@ -259,7 +268,13 @@ export const OrderController = {
         };
       }
       
-      return permissions;
+      // Asegurar que los admins puedan ver/editar/eliminar TODOS los pedidos
+      // incluso si la BD tiene valores diferentes
+      return {
+        ...permissions,
+        canEditAllOrders: true,   // Forzar a true para admins
+        canDeleteAllOrders: true  // Forzar a true para admins
+      };
     }
     
     console.log('❌ Rol no autorizado');
@@ -358,9 +373,9 @@ export const OrderController = {
       if (currentUserRole === 0) {
         statistics = await OrderModel.getAllStatistics(startDate, endDate)
       } else if (currentUserRole === 1) {
-        statistics = await OrderModel.getUserStatistics(currentUserId, startDate, endDate)
+        statistics = await OrderModel.getAllStatistics(startDate, endDate) // Admins también ven todas las estadísticas
       } else {
-        return { success: false, error: 'No autorizado' }
+        statistics = await OrderModel.getUserStatistics(currentUserId, startDate, endDate)
       }
       
       return { success: true, data: statistics }
